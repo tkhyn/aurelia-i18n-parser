@@ -107,11 +107,50 @@ export class Parser{
             reject(errors);
             return;
           }
-          resolve(this.parseDOM(window,$));
+            resolve(this.parseAureliaBindings(window,$));
+            resolve(this.parseDOM(window,$));
         }
       });
     });
   }
+
+  /**
+  * Extract translations from aurelia bindnigs.
+  *
+  * @param window          a jsdom window
+  * @param $               jquery
+  * @returns {Array}       extracted keys
+  */
+    parseAureliaBindings(window, $) {
+
+        var _this2 = this;
+
+        $ = $(window);
+        var keys = [];
+        var text = $('*').text();
+          
+        if (text) {
+            var textLines = text.split(/\r\n|\r|\n/);
+            textLines.forEach(function (line) {
+                line = line.trim();
+                if (line.startsWith('${') && line.endsWith('}') && line.indexOf('|t') > -1) {
+                    var keyValue = line.substring(2, line.length - 1)
+                    var keyValuePairArray = keyValue.split('|');
+
+                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
+                    var value = eval('({' + keyValuePairArray[1]+ '})');
+                      
+                    if (value.t && value.t.defaultValue) {
+                        keys.push(key);
+                        _this2.values[key] = value.t.defaultValue;
+                    }
+                }
+            })
+
+        }
+
+        return keys;
+    }
 
   /**
    * Extract translations from html markup.

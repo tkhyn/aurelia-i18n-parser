@@ -1,7 +1,7 @@
 {
   "name": "aurelia-i18next-parser",
   "description": "Extracts i18n from html and js files",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "author": "Aaike Van Roekeghem <aaikevr@gmail.com>",
   "keywords": [
