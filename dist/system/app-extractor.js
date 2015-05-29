@@ -1,19 +1,19 @@
-System.register(["systemjs", "config", "babel/polyfill", "core-js"], function (_export) {
-  var System, corejs, _classCallCheck, _createClass, Promise, AppExtractor;
+System.register(["systemjs", "babel/polyfill", "core-js"], function (_export) {
+  "use strict";
+
+  var System, corejs, Promise, AppExtractor;
+
+  var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+  function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
   return {
     setters: [function (_systemjs) {
       System = _systemjs["default"];
-    }, function (_config) {}, function (_babelPolyfill) {}, function (_coreJs) {
+    }, function (_babelPolyfill) {}, function (_coreJs) {
       corejs = _coreJs["default"];
     }],
     execute: function () {
-      "use strict";
-
-      _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-      _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
       Promise = corejs.Promise;
 
       AppExtractor = (function () {
@@ -21,12 +21,12 @@ System.register(["systemjs", "config", "babel/polyfill", "core-js"], function (_
           _classCallCheck(this, AppExtractor);
 
           System.config({
-            baseURL: "./",
-            transpiler: "babel",
-            babelOptions: {
-              stage: 0
+            "baseURL": "./",
+            "transpiler": "babel",
+            "babelOptions": {
+              "stage": 0
             },
-            paths: {
+            "paths": {
               "*": appPath + "/*.js"
             }
           });

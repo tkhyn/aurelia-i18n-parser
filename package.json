@@ -43,9 +43,20 @@
     "vinyl": "^0.2.3"
   },
   "devDependencies": {
+    "conventional-changelog": "0.0.17",
+    "del": "^1.2.0",
     "gulp": "^3.6.0",
+    "gulp-babel": "^5.1.0",
+    "gulp-changed": "^1.2.1",
+    "gulp-jshint": "^1.11.0",
+    "gulp-plumber": "^1.0.1",
+    "gulp-sourcemaps": "^1.5.2",
     "jshint": "^2.6.3",
-    "jshint-stylish": "^1.0.1"
+    "jshint-stylish": "^1.0.1",
+    "object.assign": "^3.0.0",
+    "require-dir": "^0.3.0",
+    "run-sequence": "^1.1.0",
+    "vinyl-paths": "^1.0.0"
   },
   "jspm": {
     "directories": {

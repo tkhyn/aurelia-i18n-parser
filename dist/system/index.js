@@ -1,7 +1,13 @@
 System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jquery", "./helpers", "path", "vinyl", "./app-extractor", "core-js"], function (_export) {
-  var through, gutil, _, fs, jsdom, $, hashFromString, mergeHash, replaceEmpty, transformText, path, File, AppExtractor, corejs, _classCallCheck, _createClass, Promise, PluginError, PLUGIN_NAME, Parser;
+  "use strict";
+
+  var through, gutil, _, fs, jsdom, $, hashFromString, mergeHash, replaceEmpty, transformText, path, File, AppExtractor, corejs, Promise, PluginError, PLUGIN_NAME, Parser;
+
+  var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
   _export("i18next", i18next);
+
+  function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
   function i18next(opts) {
     return new Parser(opts).parse();
@@ -35,12 +41,6 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
       corejs = _coreJs["default"];
     }],
     execute: function () {
-      "use strict";
-
-      _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-      _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
       Promise = corejs.Promise;
       PluginError = gutil.PluginError;
       PLUGIN_NAME = "aurelia-i18next-parser";
@@ -142,15 +142,47 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                     reject(errors);
                     return;
                   }
+                  resolve(_this.parseAureliaBindings(window, $));
                   resolve(_this.parseDOM(window, $));
                 }
               });
             });
           }
         }, {
+          key: "parseAureliaBindings",
+          value: function parseAureliaBindings(window, $) {
+
+            var _this2 = this;
+
+            $ = $(window);
+            var keys = [];
+            var text = $("*").text();
+
+            if (text) {
+              var textLines = text.split(/\r\n|\r|\n/);
+              textLines.forEach(function (line) {
+                line = line.trim();
+                if (line && line.startsWith("${") && line.endsWith("}") && line.indexOf("|t") > -1) {
+                  var keyValue = line.substring(2, line.length - 1);
+                  var splitKeyValue = keyValue.split("|");
+
+                  var key = splitKeyValue[0].replace(/"/g, "").replace(/'/g, "");
+                  var value = eval("({" + splitKeyValue[1] + "})");
+
+                  if (value.t && value.t.defaultValue) {
+                    keys.push(key);
+                    _this2.values[key] = value.t.defaultValue;
+                  }
+                }
+              });
+            }
+
+            return keys;
+          }
+        }, {
           key: "parseDOM",
           value: function parseDOM(window, $) {
-            var _this2 = this;
+            var _this3 = this;
 
             $ = $(window);
             var keys = [];
@@ -161,7 +193,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
               var node = nodes.eq(i);
               var value, key, m;
 
-              key = node.attr(_this2.translation_attribute);
+              key = node.attr(_this3.translation_attribute);
 
               var attr = "text";
 
@@ -181,7 +213,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
               switch (node[0].nodeName) {
                 case "IMG":
-                  value = node.attr(_this2.image_src);
+                  value = node.attr(_this3.image_src);
                   break;
                 default:
                   switch (attr) {
@@ -213,8 +245,8 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
               if (!key) key = value;
               keys.push(key);
-              _this2.values[key] = value;
-              _this2.nodes[key] = node;
+              _this3.values[key] = value;
+              _this3.nodes[key] = node;
             });
 
             return keys;
@@ -341,18 +373,18 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
         }, {
           key: "extractFromApp",
           value: function extractFromApp() {
-            var _this3 = this;
+            var _this4 = this;
 
             return this.extractor.getNavFromRoutes(this.routesModuleId).then(function (navRoutes) {
               if (!navRoutes) return null;
 
               for (var i = 0, l = navRoutes.length; i < l; i++) {
                 var item = navRoutes[i];
-                _this3.values[item.i18n] = item.title;
-                _this3.registry.push(_this3.defaultNamespace + _this3.keySeparator + item.i18n);
+                _this4.values[item.i18n] = item.title;
+                _this4.registry.push(_this4.defaultNamespace + _this4.keySeparator + item.i18n);
               }
 
-              if (_this3.verbose) {
+              if (_this4.verbose) {
                 gutil.log("navRoutes found:");
                 gutil.log(navRoutes);
               }
@@ -363,7 +395,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
         }, {
           key: "getValuesFromHash",
           value: function getValuesFromHash(source, target, transform, nodesHash, valuesHash) {
-            var _this4 = this;
+            var _this5 = this;
 
             target = target || {};
 
@@ -375,7 +407,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
               if (target[key] !== undefined) {
                 if (typeof source[key] === "object") {
-                  target[key] = _this4.getValuesFromHash(source[key], target[key], transform, node, valuesHash ? valuesHash[key] : valuesHash);
+                  target[key] = _this5.getValuesFromHash(source[key], target[key], transform, node, valuesHash ? valuesHash[key] : valuesHash);
                 } else if (target[key] === "") {
                   if (!node) {
                     if (valuesHash) value = valuesHash[key];
@@ -421,7 +453,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
         }, {
           key: "transformFile",
           value: function transformFile(file, encoding, cb) {
-            var _this5 = this;
+            var _this6 = this;
 
             var data, path;
 
@@ -447,10 +479,10 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
               data = file.contents.toString();
             }
 
-            if (!data) {
-              return cb();
-            }data = this.parseTranslations(path, data).then(function (keys) {
-              _this5.addToRegistry(keys);
+            if (!data) return cb();
+
+            data = this.parseTranslations(path, data).then(function (keys) {
+              _this6.addToRegistry(keys);
 
               cb();
             });
@@ -458,11 +490,11 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
         }, {
           key: "flush",
           value: function flush(cb) {
-            var _this6 = this;
+            var _this7 = this;
 
             if (this.extractor) {
               this.extractFromApp().then(function () {
-                _this6.generateAllTranslations();
+                _this7.generateAllTranslations();
                 cb();
               });
             } else {

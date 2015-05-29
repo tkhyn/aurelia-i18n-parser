@@ -3,7 +3,8 @@ var fs = require('fs');
 var changelog = require('conventional-changelog');
 var mkdirp = require('mkdirp');
 
-var dirs = gulp.pkg.directories;
+var dirs = require('../../defaults').pkg.directories;
+
 
 /**
  * Generates the changelog from git commit messages.

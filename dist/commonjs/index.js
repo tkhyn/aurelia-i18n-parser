@@ -1,59 +1,60 @@
 "use strict";
 
-var _interopRequireWildcard = function (obj) { return obj && obj.__esModule ? obj : { "default": obj }; };
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
 exports.i18next = i18next;
 
-var _through = require("through2");
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-var _through2 = _interopRequireWildcard(_through);
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var _gutil = require("gulp-util");
+var _through2 = require("through2");
 
-var _gutil2 = _interopRequireWildcard(_gutil);
+var _through22 = _interopRequireDefault(_through2);
 
-var _import = require("lodash");
+var _gulpUtil = require("gulp-util");
 
-var _import2 = _interopRequireWildcard(_import);
+var _gulpUtil2 = _interopRequireDefault(_gulpUtil);
 
-var _fs = require("graceful-fs");
+var _lodash = require("lodash");
 
-var _fs2 = _interopRequireWildcard(_fs);
+var _lodash2 = _interopRequireDefault(_lodash);
+
+var _gracefulFs = require("graceful-fs");
+
+var _gracefulFs2 = _interopRequireDefault(_gracefulFs);
 
 var _jsdom = require("jsdom");
 
-var _jsdom2 = _interopRequireWildcard(_jsdom);
+var _jsdom2 = _interopRequireDefault(_jsdom);
 
-var _$ = require("jquery");
+var _jquery = require("jquery");
 
-var _$2 = _interopRequireWildcard(_$);
+var _jquery2 = _interopRequireDefault(_jquery);
 
-var _hashFromString$mergeHash$replaceEmpty$transformText = require("./helpers");
+var _helpers = require("./helpers");
 
 var _path = require("path");
 
-var _path2 = _interopRequireWildcard(_path);
+var _path2 = _interopRequireDefault(_path);
 
-var _File = require("vinyl");
+var _vinyl = require("vinyl");
 
-var _File2 = _interopRequireWildcard(_File);
+var _vinyl2 = _interopRequireDefault(_vinyl);
 
-var _AppExtractor = require("./app-extractor");
+var _appExtractor = require("./app-extractor");
 
-var _corejs = require("core-js");
+var _coreJs = require("core-js");
 
-var _corejs2 = _interopRequireWildcard(_corejs);
+var _coreJs2 = _interopRequireDefault(_coreJs);
 
-var Promise = _corejs2["default"].Promise;
+var Promise = _coreJs2["default"].Promise;
 
-var PluginError = _gutil2["default"].PluginError;
+var PluginError = _gulpUtil2["default"].PluginError;
 
 var PLUGIN_NAME = "aurelia-i18next-parser";
 
@@ -80,13 +81,13 @@ var Parser = (function () {
 
     if (opts) Object.assign(this, opts);
 
-    if (this.appPath) this.extractor = new _AppExtractor.AppExtractor(this.appPath);
+    if (this.appPath) this.extractor = new _appExtractor.AppExtractor(this.appPath);
   }
 
   _createClass(Parser, [{
     key: "parse",
     value: function parse() {
-      return this.stream = _through2["default"].obj(this.transformFile.bind(this), this.flush.bind(this));
+      return this.stream = _through22["default"].obj(this.transformFile.bind(this), this.flush.bind(this));
     }
   }, {
     key: "parseTranslations",
@@ -94,10 +95,10 @@ var Parser = (function () {
       var ext = this.getExtension(path);
       switch (ext) {
         case "html":
-          if (this.verbose) _gutil2["default"].log("parse HTML:", path);
+          if (this.verbose) _gulpUtil2["default"].log("parse HTML:", path);
           return this.parseHTML(data);
         default:
-          if (this.verbose) _gutil2["default"].log("parse JS:", path);
+          if (this.verbose) _gulpUtil2["default"].log("parse JS:", path);
           return this.parseJavaScript(data);
       }
     }
@@ -150,19 +151,51 @@ var Parser = (function () {
           html: data,
           done: function done(errors, window) {
             if (errors) {
-              _gutil2["default"].log(errors);
+              _gulpUtil2["default"].log(errors);
               reject(errors);
               return;
             }
-            resolve(_this.parseDOM(window, _$2["default"]));
+            resolve(_this.parseAureliaBindings(window, _jquery2["default"]));
+            resolve(_this.parseDOM(window, _jquery2["default"]));
           }
         });
       });
     }
   }, {
+    key: "parseAureliaBindings",
+    value: function parseAureliaBindings(window, $) {
+
+      var _this2 = this;
+
+      $ = $(window);
+      var keys = [];
+      var text = $("*").text();
+
+      if (text) {
+        var textLines = text.split(/\r\n|\r|\n/);
+        textLines.forEach(function (line) {
+          line = line.trim();
+          if (line && line.startsWith("${") && line.endsWith("}") && line.indexOf("|t") > -1) {
+            var keyValue = line.substring(2, line.length - 1);
+            var splitKeyValue = keyValue.split("|");
+
+            var key = splitKeyValue[0].replace(/"/g, "").replace(/'/g, "");
+            var value = eval("({" + splitKeyValue[1] + "})");
+
+            if (value.t && value.t.defaultValue) {
+              keys.push(key);
+              _this2.values[key] = value.t.defaultValue;
+            }
+          }
+        });
+      }
+
+      return keys;
+    }
+  }, {
     key: "parseDOM",
     value: function parseDOM(window, $) {
-      var _this2 = this;
+      var _this3 = this;
 
       $ = $(window);
       var keys = [];
@@ -173,7 +206,7 @@ var Parser = (function () {
         var node = nodes.eq(i);
         var value, key, m;
 
-        key = node.attr(_this2.translation_attribute);
+        key = node.attr(_this3.translation_attribute);
 
         var attr = "text";
 
@@ -193,7 +226,7 @@ var Parser = (function () {
 
         switch (node[0].nodeName) {
           case "IMG":
-            value = node.attr(_this2.image_src);
+            value = node.attr(_this3.image_src);
             break;
           default:
             switch (attr) {
@@ -225,8 +258,8 @@ var Parser = (function () {
 
         if (!key) key = value;
         keys.push(key);
-        _this2.values[key] = value;
-        _this2.nodes[key] = node;
+        _this3.values[key] = value;
+        _this3.nodes[key] = node;
       });
 
       return keys;
@@ -277,7 +310,7 @@ var Parser = (function () {
 
       for (var i = 0, l = this.registry.length; i < l; i++) {
         key = this.registry[i];
-        this.registryHash = _hashFromString$mergeHash$replaceEmpty$transformText.hashFromString(key, "", this.keySeparator, this.registryHash);
+        this.registryHash = (0, _helpers.hashFromString)(key, "", this.keySeparator, this.registryHash);
       }
 
       for (var namespace in this.registryHash) {
@@ -287,11 +320,11 @@ var Parser = (function () {
         var namespaceOldPath = namespace + "_old.json";
 
         var basePath = process.cwd() + "/" + this.localesPath + "/" + locale + "/";
-        if (this.verbose) _gutil2["default"].log("basePath", basePath);
+        if (this.verbose) _gulpUtil2["default"].log("basePath", basePath);
 
-        if (_fs2["default"].existsSync(basePath + namespacePath)) {
+        if (_gracefulFs2["default"].existsSync(basePath + namespacePath)) {
           try {
-            currentTranslations = JSON.parse(_fs2["default"].readFileSync(basePath + namespacePath));
+            currentTranslations = JSON.parse(_gracefulFs2["default"].readFileSync(basePath + namespacePath));
           } catch (error) {
             this.emit("json_error", error.name, error.message);
             currentTranslations = {};
@@ -300,9 +333,9 @@ var Parser = (function () {
           currentTranslations = {};
         }
 
-        if (_fs2["default"].existsSync(basePath + namespaceOldPath)) {
+        if (_gracefulFs2["default"].existsSync(basePath + namespaceOldPath)) {
           try {
-            oldTranslations = JSON.parse(_fs2["default"].readFileSync(basePath + namespaceOldPath));
+            oldTranslations = JSON.parse(_gracefulFs2["default"].readFileSync(basePath + namespaceOldPath));
           } catch (error) {
             this.emit("json_error", error.name, error.message);
             currentTranslations = {};
@@ -311,9 +344,9 @@ var Parser = (function () {
           oldTranslations = {};
         }
 
-        mergedTranslations = _hashFromString$mergeHash$replaceEmpty$transformText.mergeHash(currentTranslations, Object.assign({}, this.registryHash[namespace]));
+        mergedTranslations = (0, _helpers.mergeHash)(currentTranslations, Object.assign({}, this.registryHash[namespace]));
 
-        mergedTranslations["new"] = _hashFromString$mergeHash$replaceEmpty$transformText.replaceEmpty(oldTranslations, mergedTranslations["new"]);
+        mergedTranslations["new"] = (0, _helpers.replaceEmpty)(oldTranslations, mergedTranslations["new"]);
 
         var transform = null;
 
@@ -321,13 +354,13 @@ var Parser = (function () {
 
         mergedTranslations["new"] = this.getValuesFromHash(this.valuesHash, mergedTranslations["new"], transform, this.nodesHash, this.valuesHash);
 
-        mergedTranslations.old = _import2["default"].extend(oldTranslations, mergedTranslations["new"]);
+        mergedTranslations.old = _lodash2["default"].extend(oldTranslations, mergedTranslations["new"]);
 
-        var mergedTranslationsFile = new _File2["default"]({
+        var mergedTranslationsFile = new _vinyl2["default"]({
           path: locale + "/" + namespacePath,
           contents: new Buffer(JSON.stringify(mergedTranslations["new"], null, 2))
         });
-        var mergedOldTranslationsFile = new _File2["default"]({
+        var mergedOldTranslationsFile = new _vinyl2["default"]({
           path: locale + "/" + namespaceOldPath,
           contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
         });
@@ -342,8 +375,8 @@ var Parser = (function () {
       this.updateHashes();
 
       if (this.verbose) {
-        _gutil2["default"].log("extracted registry:");
-        _gutil2["default"].log(this.registry);
+        _gulpUtil2["default"].log("extracted registry:");
+        _gulpUtil2["default"].log(this.registry);
       }
 
       for (var i = 0, l = this.locales.length; i < l; i++) {
@@ -353,20 +386,20 @@ var Parser = (function () {
   }, {
     key: "extractFromApp",
     value: function extractFromApp() {
-      var _this3 = this;
+      var _this4 = this;
 
       return this.extractor.getNavFromRoutes(this.routesModuleId).then(function (navRoutes) {
         if (!navRoutes) return null;
 
         for (var i = 0, l = navRoutes.length; i < l; i++) {
           var item = navRoutes[i];
-          _this3.values[item.i18n] = item.title;
-          _this3.registry.push(_this3.defaultNamespace + _this3.keySeparator + item.i18n);
+          _this4.values[item.i18n] = item.title;
+          _this4.registry.push(_this4.defaultNamespace + _this4.keySeparator + item.i18n);
         }
 
-        if (_this3.verbose) {
-          _gutil2["default"].log("navRoutes found:");
-          _gutil2["default"].log(navRoutes);
+        if (_this4.verbose) {
+          _gulpUtil2["default"].log("navRoutes found:");
+          _gulpUtil2["default"].log(navRoutes);
         }
 
         return null;
@@ -375,7 +408,7 @@ var Parser = (function () {
   }, {
     key: "getValuesFromHash",
     value: function getValuesFromHash(source, target, transform, nodesHash, valuesHash) {
-      var _this4 = this;
+      var _this5 = this;
 
       target = target || {};
 
@@ -387,14 +420,14 @@ var Parser = (function () {
 
         if (target[key] !== undefined) {
           if (typeof source[key] === "object") {
-            target[key] = _this4.getValuesFromHash(source[key], target[key], transform, node, valuesHash ? valuesHash[key] : valuesHash);
+            target[key] = _this5.getValuesFromHash(source[key], target[key], transform, node, valuesHash ? valuesHash[key] : valuesHash);
           } else if (target[key] === "") {
             if (!node) {
               if (valuesHash) value = valuesHash[key];
-              if (transform === "uppercase") value = _hashFromString$mergeHash$replaceEmpty$transformText.transformText(value);
+              if (transform === "uppercase") value = (0, _helpers.transformText)(value);
             } else {
               value = source[key];
-              if (transform === "uppercase" && node[0].nodeName !== "IMG") value = _hashFromString$mergeHash$replaceEmpty$transformText.transformText(value);
+              if (transform === "uppercase" && node[0].nodeName !== "IMG") value = (0, _helpers.transformText)(value);
             }
             target[key] = value;
           }
@@ -418,22 +451,22 @@ var Parser = (function () {
 
       var key;
 
-      this.translations = _import2["default"].uniq(this.translations).sort();
+      this.translations = _lodash2["default"].uniq(this.translations).sort();
 
       for (key in this.values) {
         if (!this.values.hasOwnProperty(key)) continue;
-        this.valuesHash = _hashFromString$mergeHash$replaceEmpty$transformText.hashFromString(key, this.values[key], this.keySeparator, this.valuesHash);
+        this.valuesHash = (0, _helpers.hashFromString)(key, this.values[key], this.keySeparator, this.valuesHash);
       }
 
       for (key in this.nodes) {
         if (!this.nodes.hasOwnProperty(key)) continue;
-        this.nodesHash = _hashFromString$mergeHash$replaceEmpty$transformText.hashFromString(key, this.nodes[key], this.keySeparator, this.nodesHash);
+        this.nodesHash = (0, _helpers.hashFromString)(key, this.nodes[key], this.keySeparator, this.nodesHash);
       }
     }
   }, {
     key: "transformFile",
     value: function transformFile(file, encoding, cb) {
-      var _this5 = this;
+      var _this6 = this;
 
       var data, path;
 
@@ -446,8 +479,8 @@ var Parser = (function () {
         path = file.path;
         if (file.stat.isDirectory()) {
           return cb();
-        } else if (path && _fs2["default"].existsSync(path)) {
-          data = _fs2["default"].readFileSync(path);
+        } else if (path && _gracefulFs2["default"].existsSync(path)) {
+          data = _gracefulFs2["default"].readFileSync(path);
         } else {
           this.emit("error", new PluginError(PLUGIN_NAME, "File has no content and is not readable"));
           return cb();
@@ -459,10 +492,10 @@ var Parser = (function () {
         data = file.contents.toString();
       }
 
-      if (!data) {
-        return cb();
-      }data = this.parseTranslations(path, data).then(function (keys) {
-        _this5.addToRegistry(keys);
+      if (!data) return cb();
+
+      data = this.parseTranslations(path, data).then(function (keys) {
+        _this6.addToRegistry(keys);
 
         cb();
       });
@@ -470,11 +503,11 @@ var Parser = (function () {
   }, {
     key: "flush",
     value: function flush(cb) {
-      var _this6 = this;
+      var _this7 = this;
 
       if (this.extractor) {
         this.extractFromApp().then(function () {
-          _this6.generateAllTranslations();
+          _this7.generateAllTranslations();
           cb();
         });
       } else {

@@ -11,7 +11,8 @@ var fs = require('graceful-fs');
 var mkdirp = require('mkdirp');
 var vinylPaths = require('vinyl-paths');
 var ncp = require('ncp').ncp;
-var dirs = gulp.pkg.directories;
+var dirs = require('../../defaults').pkg.directories;
+
 
 /**
  * Transpile es6 code into the dist directory as systemjs
@@ -30,6 +31,8 @@ gulp.task('build-system', function () {
  * Transpile es6 code into the dist directory as commonjs
  */
 gulp.task('build-commonjs', function () {
+    console.log(dirs.lib);
+
   return gulp.src(dirs.lib+"/**/*.js")
   .pipe(plumber())
   .pipe(changed(dirs.build, {extension: '.js'}))
