@@ -162,12 +162,12 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
               var textLines = text.split(/\r\n|\r|\n/);
               textLines.forEach(function (line) {
                 line = line.trim();
-                if (line && line.startsWith("${") && line.endsWith("}") && line.indexOf("|t") > -1) {
+                if (line.startsWith("${") && line.endsWith("}") && line.indexOf("|t") > -1) {
                   var keyValue = line.substring(2, line.length - 1);
-                  var splitKeyValue = keyValue.split("|");
+                  var keyValuePairArray = keyValue.split("|");
 
-                  var key = splitKeyValue[0].replace(/"/g, "").replace(/'/g, "");
-                  var value = eval("({" + splitKeyValue[1] + "})");
+                  var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
+                  var value = eval("({" + keyValuePairArray[1] + "})");
 
                   if (value.t && value.t.defaultValue) {
                     keys.push(key);
@@ -345,10 +345,12 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
               var mergedTranslationsFile = new File({
                 path: locale + "/" + namespacePath,
+
                 contents: new Buffer(JSON.stringify(mergedTranslations["new"], null, 2))
               });
               var mergedOldTranslationsFile = new File({
                 path: locale + "/" + namespaceOldPath,
+
                 contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
               });
 
