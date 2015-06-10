@@ -18,6 +18,7 @@
     "url": "https://github.com/gooy/aurelia-i18next-parser/issues"
   },
   "scripts": {
+    "preinstall": "npm install -g node-gyp",
     "test": "npm run jshint",
     "jshint": "jshint index.js gulpfile.js"
   },
