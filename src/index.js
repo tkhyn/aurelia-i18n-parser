@@ -26,7 +26,7 @@ export class Parser{
     translation_attribute = "data-i18n";
     image_src = "data-src";
     keySeparator = ".";
-    regex = null;
+    functionsParamsExclude = ['key: string, options: any'];
     appPath = null;
     localesPath = "src/locales";
     routesModuleId = "routes";
@@ -73,17 +73,29 @@ export class Parser{
      * @returns {Promise}   resolved when data has been parsed
      */
     parseJavaScript(data){
-
-        var fnPattern = '(?:' + this.functions.join(')|(?:').replace('.', '\\.') + ')';
-        var pattern = '[^a-zA-Z0-9_](?:' + fnPattern + ')(?:\\(|\\s)\\s*(?:(?:\'((?:(?:\\\\\')?[^\']*)+[^\\\\])\')|(?:"((?:(?:\\\\")?[^"]*)+[^\\\\])"))';
-        var functionRegex = new RegExp(this.regex || pattern, 'g');
+        var _this2 = this;
+        var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
+        var pattern = '[^a-zA-Z0-9_]((?:'+ fnPattern +')((?:[^);]*())))'
+        var functionRegex = new RegExp(pattern, 'g');
         var matches;
         var keys = [];
 
-        while(( matches = functionRegex.exec(data) )){
-            // the key should be the first truthy match
-            for(var i of matches){
-                if(i > 0 && matches[i]) keys.push(matches[i]);
+        while( matches = functionRegex.exec(data) ){
+            // parameters pairs are always in third element of matches array
+            if (matches.length > 1) {
+                var argsMatch = matches[2].replace(/ /g, ''); //replace spaces with empty
+                if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatch) < 0) {
+                
+                    var keyValuePairArray = argsMatch.split( /,(.+)/);
+
+                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
+                    var value = eval('(' + keyValuePairArray[1]+ ')');
+                    
+                    keys.push(key);                      
+                    if (value && value.defaultValue) {
+                        _this2.values[key] = value.defaultValue;
+                    }
+                }
             }
         }
 
@@ -140,8 +152,8 @@ export class Parser{
                     var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
                     var value = eval('({' + keyValuePairArray[1]+ '})');
                       
+                    keys.push(key);
                     if (value.t && value.t.defaultValue) {
-                        keys.push(key);
                         _this2.values[key] = value.t.defaultValue;
                     }
                 }

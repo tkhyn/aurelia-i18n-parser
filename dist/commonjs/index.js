@@ -69,7 +69,7 @@ var Parser = (function () {
         this.translation_attribute = "data-i18n";
         this.image_src = "data-src";
         this.keySeparator = ".";
-        this.regex = null;
+        this.functionsParamsExclude = ["key: string, options: any"];
         this.appPath = null;
         this.localesPath = "src/locales";
         this.routesModuleId = "routes";
@@ -105,35 +105,28 @@ var Parser = (function () {
     }, {
         key: "parseJavaScript",
         value: function parseJavaScript(data) {
-
-            var fnPattern = "(?:" + this.functions.join(")|(?:").replace(".", "\\.") + ")";
-            var pattern = "[^a-zA-Z0-9_](?:" + fnPattern + ")(?:\\(|\\s)\\s*(?:(?:'((?:(?:\\\\')?[^']*)+[^\\\\])')|(?:\"((?:(?:\\\\\")?[^\"]*)+[^\\\\])\"))";
-            var functionRegex = new RegExp(this.regex || pattern, "g");
+            var _this2 = this;
+            var fnPattern = "(?:" + this.functions.join("\\()|(?:").replace(".", "\\.") + "\\()";
+            var pattern = "[^a-zA-Z0-9_]((?:" + fnPattern + ")((?:[^);]*())))";
+            var functionRegex = new RegExp(pattern, "g");
             var matches;
             var keys = [];
 
             while (matches = functionRegex.exec(data)) {
-                var _iteratorNormalCompletion = true;
-                var _didIteratorError = false;
-                var _iteratorError = undefined;
+                if (matches.length > 1) {
+                    var argsMatch = matches[2].replace(/ /g, "");
+                    if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function (item) {
+                        return item.replace(/ /g, "");
+                    }).indexOf(argsMatch) < 0) {
 
-                try {
-                    for (var _iterator = matches[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                        var i = _step.value;
+                        var keyValuePairArray = argsMatch.split(/,(.+)/);
 
-                        if (i > 0 && matches[i]) keys.push(matches[i]);
-                    }
-                } catch (err) {
-                    _didIteratorError = true;
-                    _iteratorError = err;
-                } finally {
-                    try {
-                        if (!_iteratorNormalCompletion && _iterator["return"]) {
-                            _iterator["return"]();
-                        }
-                    } finally {
-                        if (_didIteratorError) {
-                            throw _iteratorError;
+                        var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
+                        var value = eval("(" + keyValuePairArray[1] + ")");
+
+                        keys.push(key);
+                        if (value && value.defaultValue) {
+                            _this2.values[key] = value.defaultValue;
                         }
                     }
                 }
@@ -182,8 +175,8 @@ var Parser = (function () {
                         var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
                         var value = eval("({" + keyValuePairArray[1] + "})");
 
+                        keys.push(key);
                         if (value.t && value.t.defaultValue) {
-                            keys.push(key);
                             _this2.values[key] = value.t.defaultValue;
                         }
                     }
@@ -267,13 +260,13 @@ var Parser = (function () {
     }, {
         key: "addToRegistry",
         value: function addToRegistry(keys) {
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
 
             try {
-                for (var _iterator2 = keys[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var key = _step2.value;
+                for (var _iterator = keys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var key = _step.value;
 
                     key = key.replace(/\\('|")/g, "$1");
 
@@ -286,16 +279,16 @@ var Parser = (function () {
                     this.registry.push(key);
                 }
             } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
+                _didIteratorError = true;
+                _iteratorError = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion2 && _iterator2["return"]) {
-                        _iterator2["return"]();
+                    if (!_iteratorNormalCompletion && _iterator["return"]) {
+                        _iterator["return"]();
                     }
                 } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
+                    if (_didIteratorError) {
+                        throw _iteratorError;
                     }
                 }
             }
