@@ -114,10 +114,11 @@ var Parser = (function () {
 
             while (matches = functionRegex.exec(data)) {
                 if (matches.length > 1) {
-                    var argsMatch = matches[2].replace(/ /g, "");
+                    var argsMatch = matches[2];
+                    var argsMatchTrim = argsMatch.replace(/ /g, "");
                     if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function (item) {
                         return item.replace(/ /g, "");
-                    }).indexOf(argsMatch) < 0) {
+                    }).indexOf(argsMatchTrim) < 0) {
 
                         var keyValuePairArray = argsMatch.split(/,(.+)/);
 

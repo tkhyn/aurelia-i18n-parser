@@ -83,8 +83,9 @@ export class Parser{
         while( matches = functionRegex.exec(data) ){
             // parameters pairs are always in third element of matches array
             if (matches.length > 1) {
-                var argsMatch = matches[2].replace(/ /g, ''); //replace spaces with empty
-                if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatch) < 0) {
+                var argsMatch = matches[2]; //replace spaces with empty
+                var argsMatchTrim = argsMatch.replace(/ /g, '');
+                if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatchTrim) < 0) {
                 
                     var keyValuePairArray = argsMatch.split( /,(.+)/);
 
