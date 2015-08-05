@@ -1,6 +1,5 @@
 System.config({
   "baseURL": "/",
-  "defaultJSExtensions": true,
   "transpiler": "babel",
   "babelOptions": {
     "stage": 0,
@@ -9,8 +8,9 @@ System.config({
     ]
   },
   "paths": {
-    "github:*": "jspm_packages/github/*",
-    "npm:*": "jspm_packages/npm/*"
+    "*": "*.js",
+    "github:*": "jspm_packages/github/*.js",
+    "npm:*": "jspm_packages/npm/*.js"
   }
 });
 
@@ -20,7 +20,6 @@ System.config({
     "babel-runtime": "npm:babel-runtime@5.2.17",
     "core-js": "npm:core-js@0.9.7",
     "lodash": "npm:lodash@3.9.1",
-    "talkslab/metro-bootstrap": "github:talkslab/metro-bootstrap@master",
     "github:jspm/nodelibs-process@0.1.1": {
       "process": "npm:process@0.10.1"
     },
