@@ -59,10 +59,10 @@ export class Parser{
         switch(ext){
             case 'html':
                 if(this.verbose) gutil.log("parse HTML:",path);
-                return this.parseHTML(data);
+                return this.parseHTML(data, path);
             default:
                 if(this.verbose) gutil.log("parse JS:",path);
-                return this.parseJavaScript(data);
+                return this.parseJavaScript(data, path);
         }
     }
 
@@ -72,7 +72,7 @@ export class Parser{
      * @param data          javascript code as a string
      * @returns {Promise}   resolved when data has been parsed
      */
-    parseJavaScript(data){
+    parseJavaScript(data, path){
         var _this2 = this;
         var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
         var pattern = '[^a-zA-Z0-9_]((?:'+ fnPattern +')((?:[^);]*())))'
@@ -88,14 +88,26 @@ export class Parser{
                 if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatchTrim) < 0) {
                 
                     var keyValuePairArray = argsMatch.split( /,(.+)/);
+                    var namespace = _this2.getNamespace(path);
 
-                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
-                    var value = eval('(' + keyValuePairArray[1]+ ')');
-                    
-                    keys.push(key);                      
-                    if (value && value.defaultValue) {
-                        _this2.values[key] = value.defaultValue;
+                    var key;
+                    try {
+                        var keyPatern = keyValuePairArray[0].replace(/this./g, '');
+                        key = eval(keyPatern);
+                        try {
+                            var value = eval('(' + keyValuePairArray[1]+ ')');
+
+                            keys.push(key);                      
+                            if (value && value.defaultValue) {
+                                _this2.values[key] = value.defaultValue;
+                            }
+                        } catch (e) {
+                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
+                        }
+                    } catch (e) {
+                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
                     }
+                    
                 }
             }
         }
@@ -109,7 +121,7 @@ export class Parser{
      * @param data          html markup as a string
      * @returns {Promise}   resolved when data has been parsed
      */
-    parseHTML(data){
+    parseHTML(data, path){
         return new Promise((resolve, reject) =>{
             jsdom.env({
                 html: data,
@@ -120,7 +132,7 @@ export class Parser{
                         reject(errors);
                         return;
                     }
-                    resolve(this.parseAureliaBindings(window,$));
+                    resolve(this.parseAureliaBindings(data, path));
                     resolve(this.parseDOM(window,$));
                 }
             });
@@ -134,32 +146,65 @@ export class Parser{
     * @param $               jquery
     * @returns {Array}       extracted keys
     */
-    parseAureliaBindings(window, $) {
+    parseAureliaBindings(html, path) {
 
         var _this2 = this;
 
-        $ = $(window);
+        //$ = $(window);
         var keys = [];
-        var text = $('*').text();
-          
+        var text = html; // $('*').text();
+
         if (text) {
             var textLines = text.split(/\r\n|\r|\n/);
+
             textLines.forEach(function (line) {
                 line = line.trim();
-                if (line.startsWith('${') && line.endsWith('}') && line.indexOf('|t') > -1) {
-                    var keyValue = line.substring(2, line.length - 1)
+
+                var startInd = line.indexOf('${');
+                var ind = startInd + 2;
+                var bricCounter = 1;
+                while (ind < line.length && bricCounter > 0) {
+                    if (line[ind] == '}') {
+                        bricCounter--;
+                    }
+                    if (line[ind] == '{') {
+                        bricCounter++;
+                    }
+                    ind++;
+                }
+
+                var i18nLine = line.substr(startInd, ind - startInd);
+
+                if (i18nLine.indexOf('|t') > -1) {
+                    var keyValue = i18nLine.substring(2, i18nLine.length - 1);
                     var keyValuePairArray = keyValue.split('|');
 
-                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
-                    var value = eval('({' + keyValuePairArray[1]+ '})');
-                      
-                    keys.push(key);
-                    if (value.t && value.t.defaultValue) {
-                        _this2.values[key] = value.t.defaultValue;
-                    }
-                }
-            })
+                    var namespace = _this2.getNamespace(path);
 
+                    var key;
+                    try {
+                        key = eval(keyValuePairArray[0]);
+
+                        var value;
+                        try {
+                            value = eval('({' + keyValuePairArray[1] + '})');
+                            keys.push(key);
+                            if (value && value.t && value.t.defaultValue) {
+                                _this2.values[key] = value.t.defaultValue;
+                            }
+
+                        } catch (e) {
+                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
+                        }
+                        
+
+
+                    } catch (e) {
+                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
+                    }
+
+                }
+            });
         }
 
         return keys;
@@ -176,70 +221,70 @@ export class Parser{
         $ = $(window);
         var keys = [];
         var selector = `[${this.translation_attribute}]`;
-    var nodes = $(selector);
+        var nodes = $(selector);
 
-    nodes.each(i=>{
-      var node = nodes.eq(i);
-      var value,key,m;
+        nodes.each(i=>{
+            var node = nodes.eq(i);
+            var value,key,m;
 
-      key = node.attr(this.translation_attribute);
+            key = node.attr(this.translation_attribute);
 
-      var attr = "text";
-      //set default attribute to src if this is an image node
-      if(node[0].nodeName==="IMG") attr = "src";
+            var attr = "text";
+            //set default attribute to src if this is an image node
+            if(node[0].nodeName==="IMG") attr = "src";
 
-      var re = /\[([a-z]*)]/g;
-      //check if a attribute was specified in the key
-      while ((m = re.exec(key)) !== null) {
-        if (m.index === re.lastIndex) {
-          re.lastIndex++;
-        }
-        if(m){
-          key = key.replace(m[0],'');
-          attr = m[1];
-        }
-      }
+            var re = /\[([a-z]*)]/g;
+            //check if a attribute was specified in the key
+            while ((m = re.exec(key)) !== null) {
+                if (m.index === re.lastIndex) {
+                    re.lastIndex++;
+                }
+                if(m){
+                    key = key.replace(m[0],'');
+                    attr = m[1];
+                }
+            }
 
-      switch(node[0].nodeName){
-        case "IMG":
-          value = node.attr(this.image_src);
-          break;
-        default:
-          switch(attr){
-            case 'text':
-              value = node.text().trim();
-              break;
-            case 'prepend':
-              value = node.html().trim();
-              break;
-            case 'append':
-              value = node.html().trim();
-              break;
-            case 'html':
-              value = node.html().trim();
-              break;
-            default: //custom attribute
-              value = node.attr(attr);
-              break;
-          }
-      }
+            switch(node[0].nodeName){
+                case "IMG":
+                    value = node.attr(this.image_src);
+                    break;
+                default:
+                    switch(attr){
+                        case 'text':
+                            value = node.text().trim();
+                            break;
+                        case 'prepend':
+                            value = node.html().trim();
+                            break;
+                        case 'append':
+                            value = node.html().trim();
+                            break;
+                        case 'html':
+                            value = node.html().trim();
+                            break;
+                        default: //custom attribute
+                            value = node.attr(attr);
+                            break;
+                    }
+            }
 
-      //skip keys with interpolations
-      if(key.indexOf("${") > -1){
-          return;
-      }
+            //skip keys with interpolations
+            if(key.indexOf("${") > -1){
+                return;
+            }
 
-        // remove the backslash from escaped quotes
-        key = key.replace(/\\('|")/g, '$1');
+            // remove the backslash from escaped quotes
+            key = key.replace(/\\('|")/g, '$1');
 
-        // remove the optional attribute
-        key = key.replace(/\[[a-z]*]/g, '');
+            // remove the optional attribute
+            key = key.replace(/\[[a-z]*]/g, '');
 
-        if(!key) key = value;
-        keys.push(key);
-        this.values[key] = value;
-        this.nodes[key] = node;
-    });
+            if(!key) key = value;
+            keys.push(key);
+            this.values[key] = value;
+            this.nodes[key] = node;
+        });
 
         return keys;
     }
@@ -262,6 +307,12 @@ export class Parser{
             this.registry.push(key);
         }
     }
+
+    getNamespace(path) {
+        var startInd = path.indexOf(this.projectFolderName) + this.projectFolderName.length + 1;
+        var dotInd = path.indexOf('.');
+        return path.substr(startInd, dotInd - startInd).replace(/\\/g, '.');
+    }   
 
     /**
      * Generate translation files from the current registry entries.

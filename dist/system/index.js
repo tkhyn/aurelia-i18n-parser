@@ -83,15 +83,15 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                         switch (ext) {
                             case 'html':
                                 if (this.verbose) gutil.log("parse HTML:", path);
-                                return this.parseHTML(data);
+                                return this.parseHTML(data, path);
                             default:
                                 if (this.verbose) gutil.log("parse JS:", path);
-                                return this.parseJavaScript(data);
+                                return this.parseJavaScript(data, path);
                         }
                     }
                 }, {
                     key: "parseJavaScript",
-                    value: function parseJavaScript(data) {
+                    value: function parseJavaScript(data, path) {
                         var _this2 = this;
                         var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
                         var pattern = '[^a-zA-Z0-9_]((?:' + fnPattern + ')((?:[^);]*())))';
@@ -108,13 +108,24 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                 }).indexOf(argsMatchTrim) < 0) {
 
                                     var keyValuePairArray = argsMatch.split(/,(.+)/);
+                                    var namespace = _this2.getNamespace(path);
 
-                                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
-                                    var value = eval('(' + keyValuePairArray[1] + ')');
+                                    var key;
+                                    try {
+                                        var keyPatern = keyValuePairArray[0].replace(/this./g, '');
+                                        key = eval(keyPatern);
+                                        try {
+                                            var value = eval('(' + keyValuePairArray[1] + ')');
 
-                                    keys.push(key);
-                                    if (value && value.defaultValue) {
-                                        _this2.values[key] = value.defaultValue;
+                                            keys.push(key);
+                                            if (value && value.defaultValue) {
+                                                _this2.values[key] = value.defaultValue;
+                                            }
+                                        } catch (e) {
+                                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
+                                        }
+                                    } catch (e) {
+                                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
                                     }
                                 }
                             }
@@ -124,7 +135,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                     }
                 }, {
                     key: "parseHTML",
-                    value: function parseHTML(data) {
+                    value: function parseHTML(data, path) {
                         var _this = this;
 
                         return new Promise(function (resolve, reject) {
@@ -136,7 +147,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                         reject(errors);
                                         return;
                                     }
-                                    resolve(_this.parseAureliaBindings(window, $));
+                                    resolve(_this.parseAureliaBindings(data, path));
                                     resolve(_this.parseDOM(window, $));
                                 }
                             });
@@ -144,28 +155,56 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                     }
                 }, {
                     key: "parseAureliaBindings",
-                    value: function parseAureliaBindings(window, $) {
+                    value: function parseAureliaBindings(html, path) {
 
                         var _this2 = this;
 
-                        $ = $(window);
                         var keys = [];
-                        var text = $('*').text();
+                        var text = html;
 
                         if (text) {
                             var textLines = text.split(/\r\n|\r|\n/);
+
                             textLines.forEach(function (line) {
                                 line = line.trim();
-                                if (line.startsWith('${') && line.endsWith('}') && line.indexOf('|t') > -1) {
-                                    var keyValue = line.substring(2, line.length - 1);
+
+                                var startInd = line.indexOf('${');
+                                var ind = startInd + 2;
+                                var bricCounter = 1;
+                                while (ind < line.length && bricCounter > 0) {
+                                    if (line[ind] == '}') {
+                                        bricCounter--;
+                                    }
+                                    if (line[ind] == '{') {
+                                        bricCounter++;
+                                    }
+                                    ind++;
+                                }
+
+                                var i18nLine = line.substr(startInd, ind - startInd);
+
+                                if (i18nLine.indexOf('|t') > -1) {
+                                    var keyValue = i18nLine.substring(2, i18nLine.length - 1);
                                     var keyValuePairArray = keyValue.split('|');
 
-                                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
-                                    var value = eval('({' + keyValuePairArray[1] + '})');
+                                    var namespace = _this2.getNamespace(path);
 
-                                    keys.push(key);
-                                    if (value.t && value.t.defaultValue) {
-                                        _this2.values[key] = value.t.defaultValue;
+                                    var key;
+                                    try {
+                                        key = eval(keyValuePairArray[0]);
+
+                                        var value;
+                                        try {
+                                            value = eval('({' + keyValuePairArray[1] + '})');
+                                            keys.push(key);
+                                            if (value && value.t && value.t.defaultValue) {
+                                                _this2.values[key] = value.t.defaultValue;
+                                            }
+                                        } catch (e) {
+                                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
+                                        }
+                                    } catch (e) {
+                                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
                                     }
                                 }
                             });
@@ -280,6 +319,13 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                 }
                             }
                         }
+                    }
+                }, {
+                    key: "getNamespace",
+                    value: function getNamespace(path) {
+                        var startInd = path.indexOf(this.projectFolderName) + this.projectFolderName.length + 1;
+                        var dotInd = path.indexOf('.');
+                        return path.substr(startInd, dotInd - startInd).replace(/\\/g, '.');
                     }
                 }, {
                     key: "generateTranslation",
