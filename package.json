@@ -1,7 +1,7 @@
 {
   "name": "aurelia-i18next-parser",
-  "description": "Extracts i18n from html and js files",
-  "version": "0.0.3",
+  "description": "Extracts i18n from html and js files together with defaulValues",
+  "version": "0.0.4",
   "license": "MIT",
   "author": "Aaike Van Roekeghem <aaikevr@gmail.com>",
   "keywords": [
@@ -21,7 +21,7 @@
     "test": "npm run jshint",
     "jshint": "jshint index.js gulpfile.js"
   },
-  "main": "dist/system/index.js",
+  "main": "dist/commonjs/index.js",
   "directories": {
     "lib": "src",
     "build": "dist"
@@ -29,34 +29,34 @@
   "dependencies": {
     "babel": "^5.4.4",
     "child-process-promise": "^1.1.0",
+    "conventional-changelog": "0.0.17",
     "core-js": "^0.9.11",
-    "graceful-fs": "^3.0.7",
+    "del": "^1.2.0",
+    "graceful-fs": "^3.0.8",
+    "gulp-babel": "^5.1.0",
+    "gulp-changed": "^1.2.1",
+    "gulp-jshint": "^1.11.0",
+    "gulp-plumber": "^1.0.1",
+    "gulp-sourcemaps": "^1.5.2",
     "gulp-util": "~2.2.14",
     "jquery": "^2.1.4",
     "jsdom": "^3.1.2",
     "lodash": "~2.4.1",
     "mkdirp": "^0.5.1",
     "ncp": "^2.0.0",
-    "path": "^0.11.14",
-    "systemjs": "^0.16.11",
-    "through2": "^0.6.5",
-    "vinyl": "^0.2.3"
-  },
-  "devDependencies": {
-    "conventional-changelog": "0.0.17",
-    "del": "^1.2.0",
-    "gulp": "^3.6.0",
-    "gulp-babel": "^5.1.0",
-    "gulp-changed": "^1.2.1",
-    "gulp-jshint": "^1.11.0",
-    "gulp-plumber": "^1.0.1",
-    "gulp-sourcemaps": "^1.5.2",
-    "jshint": "^2.6.3",
-    "jshint-stylish": "^1.0.1",
     "object.assign": "^3.0.0",
+    "path": "^0.11.14",
     "require-dir": "^0.3.0",
     "run-sequence": "^1.1.0",
+    "systemjs": "^0.16.11",
+    "through2": "^0.6.5",
+    "vinyl": "^0.2.3",
     "vinyl-paths": "^1.0.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.6.0",
+    "jshint": "^2.6.3",
+    "jshint-stylish": "^1.0.1"
   },
   "jspm": {
     "directories": {

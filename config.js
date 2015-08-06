@@ -1,5 +1,6 @@
 System.config({
   "baseURL": "/",
+  "defaultJSExtensions": true,
   "transpiler": "babel",
   "babelOptions": {
     "stage": 0,
@@ -8,9 +9,8 @@ System.config({
     ]
   },
   "paths": {
-    "*": "*.js",
-    "github:*": "jspm_packages/github/*.js",
-    "npm:*": "jspm_packages/npm/*.js"
+    "github:*": "jspm_packages/github/*",
+    "npm:*": "jspm_packages/npm/*"
   }
 });
 
@@ -31,4 +31,3 @@ System.config({
     }
   }
 });
-
