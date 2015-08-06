@@ -73,7 +73,7 @@ function replaceEmpty(source, target, transform) {
         target[key] = replaceEmpty(source[key], target[key], transform);
       } else if (target[key] === '') {
         var value = source[key];
-        if (transform === 'uppercase') value = transformText(value);
+        if (transform === "uppercase") value = transformText(value);
         target[key] = value;
       }
     }

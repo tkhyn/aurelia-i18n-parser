@@ -50,17 +50,17 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                     _classCallCheck(this, Parser);
 
                     this.verbose = false;
-                    this.defaultNamespace = "translation";
-                    this.functions = ["t"];
+                    this.defaultNamespace = 'translation';
+                    this.functions = ['t'];
                     this.namespaceSeparator = ":";
                     this.translation_attribute = "data-i18n";
                     this.image_src = "data-src";
                     this.keySeparator = ".";
-                    this.functionsParamsExclude = ["key: string, options: any"];
+                    this.functionsParamsExclude = ['key: string, options: any'];
                     this.appPath = null;
                     this.localesPath = "src/locales";
                     this.routesModuleId = "routes";
-                    this.locales = ["en-US"];
+                    this.locales = ['en-US'];
                     this.defaultLocale = "en";
                     this.registry = [];
                     this.values = {};
@@ -81,7 +81,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                     value: function parseTranslations(path, data) {
                         var ext = this.getExtension(path);
                         switch (ext) {
-                            case "html":
+                            case 'html':
                                 if (this.verbose) gutil.log("parse HTML:", path);
                                 return this.parseHTML(data);
                             default:
@@ -93,24 +93,24 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                     key: "parseJavaScript",
                     value: function parseJavaScript(data) {
                         var _this2 = this;
-                        var fnPattern = "(?:" + this.functions.join("\\()|(?:").replace(".", "\\.") + "\\()";
-                        var pattern = "[^a-zA-Z0-9_]((?:" + fnPattern + ")((?:[^);]*())))";
-                        var functionRegex = new RegExp(pattern, "g");
+                        var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
+                        var pattern = '[^a-zA-Z0-9_]((?:' + fnPattern + ')((?:[^);]*())))';
+                        var functionRegex = new RegExp(pattern, 'g');
                         var matches;
                         var keys = [];
 
                         while (matches = functionRegex.exec(data)) {
                             if (matches.length > 1) {
                                 var argsMatch = matches[2];
-                                var argsMatchTrim = argsMatch.replace(/ /g, "");
+                                var argsMatchTrim = argsMatch.replace(/ /g, '');
                                 if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function (item) {
-                                    return item.replace(/ /g, "");
+                                    return item.replace(/ /g, '');
                                 }).indexOf(argsMatchTrim) < 0) {
 
                                     var keyValuePairArray = argsMatch.split(/,(.+)/);
 
-                                    var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
-                                    var value = eval("(" + keyValuePairArray[1] + ")");
+                                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
+                                    var value = eval('(' + keyValuePairArray[1] + ')');
 
                                     keys.push(key);
                                     if (value && value.defaultValue) {
@@ -150,18 +150,18 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
                         $ = $(window);
                         var keys = [];
-                        var text = $("*").text();
+                        var text = $('*').text();
 
                         if (text) {
                             var textLines = text.split(/\r\n|\r|\n/);
                             textLines.forEach(function (line) {
                                 line = line.trim();
-                                if (line.startsWith("${") && line.endsWith("}") && line.indexOf("|t") > -1) {
+                                if (line.startsWith('${') && line.endsWith('}') && line.indexOf('|t') > -1) {
                                     var keyValue = line.substring(2, line.length - 1);
-                                    var keyValuePairArray = keyValue.split("|");
+                                    var keyValuePairArray = keyValue.split('|');
 
-                                    var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
-                                    var value = eval("({" + keyValuePairArray[1] + "})");
+                                    var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
+                                    var value = eval('({' + keyValuePairArray[1] + '})');
 
                                     keys.push(key);
                                     if (value.t && value.t.defaultValue) {
@@ -200,7 +200,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                     re.lastIndex++;
                                 }
                                 if (m) {
-                                    key = key.replace(m[0], "");
+                                    key = key.replace(m[0], '');
                                     attr = m[1];
                                 }
                             }
@@ -211,16 +211,16 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                     break;
                                 default:
                                     switch (attr) {
-                                        case "text":
+                                        case 'text':
                                             value = node.text().trim();
                                             break;
-                                        case "prepend":
+                                        case 'prepend':
                                             value = node.html().trim();
                                             break;
-                                        case "append":
+                                        case 'append':
                                             value = node.html().trim();
                                             break;
-                                        case "html":
+                                        case 'html':
                                             value = node.html().trim();
                                             break;
                                         default:
@@ -233,9 +233,9 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                 return;
                             }
 
-                            key = key.replace(/\\('|")/g, "$1");
+                            key = key.replace(/\\('|")/g, '$1');
 
-                            key = key.replace(/\[[a-z]*]/g, "");
+                            key = key.replace(/\[[a-z]*]/g, '');
 
                             if (!key) key = value;
                             keys.push(key);
@@ -256,7 +256,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                             for (var _iterator = keys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                                 var key = _step.value;
 
-                                key = key.replace(/\\('|")/g, "$1");
+                                key = key.replace(/\\('|")/g, '$1');
 
                                 if (key.indexOf(this.namespaceSeparator) === -1) {
                                     key = this.defaultNamespace + this.keySeparator + key;
@@ -291,22 +291,22 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
                         for (var i = 0, l = this.registry.length; i < l; i++) {
                             key = this.registry[i];
-                            this.registryHash = hashFromString(key, "", this.keySeparator, this.registryHash);
+                            this.registryHash = hashFromString(key, '', this.keySeparator, this.registryHash);
                         }
 
                         for (var namespace in this.registryHash) {
                             if (!this.registryHash.hasOwnProperty(namespace)) continue;
 
-                            var namespacePath = namespace + ".json";
+                            var namespacePath = namespace + '.json';
 
                             var basePath = this.localesPath + "/" + locale + "/";
-                            if (this.verbose) gutil.log("basePath", basePath);
+                            if (this.verbose) gutil.log('basePath', basePath);
 
                             if (fs.existsSync(basePath + namespacePath)) {
                                 try {
                                     currentTranslations = JSON.parse(fs.readFileSync(basePath + namespacePath));
                                 } catch (error) {
-                                    this.emit("json_error", error.name, error.message);
+                                    this.emit('json_error', error.name, error.message);
                                     currentTranslations = {};
                                 }
                             } else {
@@ -342,7 +342,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                         this.updateHashes();
 
                         if (this.verbose) {
-                            gutil.log("extracted registry:");
+                            gutil.log('extracted registry:');
                             gutil.log(this.registry);
                         }
 
@@ -365,7 +365,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                             }
 
                             if (_this4.verbose) {
-                                gutil.log("navRoutes found:");
+                                gutil.log('navRoutes found:');
                                 gutil.log(navRoutes);
                             }
 
@@ -386,9 +386,9 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                             var value;
 
                             if (target[key] !== undefined) {
-                                if (typeof source[key] === "object") {
+                                if (typeof source[key] === 'object') {
                                     target[key] = _this5.getValuesFromHash(source[key], target[key], transform, node, valuesHash ? valuesHash[key] : valuesHash);
-                                } else if (target[key] === "") {
+                                } else if (target[key] === '') {
                                     if (!node) {
                                         if (valuesHash) value = valuesHash[key];
                                         if (transform === "uppercase") value = transformText(value);
@@ -438,7 +438,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                         var data, path;
 
                         if (file.isStream()) {
-                            this.emit("error", new PluginError(PLUGIN_NAME, "Streams are not supported!"));
+                            this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
                             return cb();
                         }
 

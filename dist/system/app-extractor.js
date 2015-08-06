@@ -22,7 +22,7 @@ System.register(["systemjs", "babel/polyfill", "core-js"], function (_export) {
 
           System.config({
             "baseURL": "./",
-            "transpiler": "babel",
+            "transpiler": 'babel',
             "babelOptions": {
               "stage": 0
             },

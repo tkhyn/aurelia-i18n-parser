@@ -1,7 +1,7 @@
 {
   "name": "aurelia-i18next-parser",
   "description": "Extracts i18n from html and js files",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "author": "Aaike Van Roekeghem <aaikevr@gmail.com>",
   "keywords": [
@@ -12,17 +12,16 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/gooy/aurelia-i18next-parser"
+    "url": "https://github.com/kdeberni/aurelia-i18next-parser"
   },
   "bugs": {
-    "url": "https://github.com/gooy/aurelia-i18next-parser/issues"
+    "url": "https://github.com/kdeberni/aurelia-i18next-parser/issues"
   },
   "scripts": {
-    "preinstall": "npm install -g node-gyp",
     "test": "npm run jshint",
     "jshint": "jshint index.js gulpfile.js"
   },
-  "main": "dist/commonjs/index.js",
+  "main": "dist/system/index.js",
   "directories": {
     "lib": "src",
     "build": "dist"

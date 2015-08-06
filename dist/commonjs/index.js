@@ -12,7 +12,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "d
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var _through2 = require("through2");
+var _through2 = require('through2');
 
 var _through22 = _interopRequireDefault(_through2);
 
@@ -63,17 +63,17 @@ var Parser = (function () {
         _classCallCheck(this, Parser);
 
         this.verbose = false;
-        this.defaultNamespace = "translation";
-        this.functions = ["t"];
+        this.defaultNamespace = 'translation';
+        this.functions = ['t'];
         this.namespaceSeparator = ":";
         this.translation_attribute = "data-i18n";
         this.image_src = "data-src";
         this.keySeparator = ".";
-        this.functionsParamsExclude = ["key: string, options: any"];
+        this.functionsParamsExclude = ['key: string, options: any'];
         this.appPath = null;
         this.localesPath = "src/locales";
         this.routesModuleId = "routes";
-        this.locales = ["en-US"];
+        this.locales = ['en-US'];
         this.defaultLocale = "en";
         this.registry = [];
         this.values = {};
@@ -94,7 +94,7 @@ var Parser = (function () {
         value: function parseTranslations(path, data) {
             var ext = this.getExtension(path);
             switch (ext) {
-                case "html":
+                case 'html':
                     if (this.verbose) _gulpUtil2["default"].log("parse HTML:", path);
                     return this.parseHTML(data);
                 default:
@@ -106,24 +106,24 @@ var Parser = (function () {
         key: "parseJavaScript",
         value: function parseJavaScript(data) {
             var _this2 = this;
-            var fnPattern = "(?:" + this.functions.join("\\()|(?:").replace(".", "\\.") + "\\()";
-            var pattern = "[^a-zA-Z0-9_]((?:" + fnPattern + ")((?:[^);]*())))";
-            var functionRegex = new RegExp(pattern, "g");
+            var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
+            var pattern = '[^a-zA-Z0-9_]((?:' + fnPattern + ')((?:[^);]*())))';
+            var functionRegex = new RegExp(pattern, 'g');
             var matches;
             var keys = [];
 
             while (matches = functionRegex.exec(data)) {
                 if (matches.length > 1) {
                     var argsMatch = matches[2];
-                    var argsMatchTrim = argsMatch.replace(/ /g, "");
+                    var argsMatchTrim = argsMatch.replace(/ /g, '');
                     if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function (item) {
-                        return item.replace(/ /g, "");
+                        return item.replace(/ /g, '');
                     }).indexOf(argsMatchTrim) < 0) {
 
                         var keyValuePairArray = argsMatch.split(/,(.+)/);
 
-                        var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
-                        var value = eval("(" + keyValuePairArray[1] + ")");
+                        var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
+                        var value = eval('(' + keyValuePairArray[1] + ')');
 
                         keys.push(key);
                         if (value && value.defaultValue) {
@@ -163,18 +163,18 @@ var Parser = (function () {
 
             $ = $(window);
             var keys = [];
-            var text = $("*").text();
+            var text = $('*').text();
 
             if (text) {
                 var textLines = text.split(/\r\n|\r|\n/);
                 textLines.forEach(function (line) {
                     line = line.trim();
-                    if (line.startsWith("${") && line.endsWith("}") && line.indexOf("|t") > -1) {
+                    if (line.startsWith('${') && line.endsWith('}') && line.indexOf('|t') > -1) {
                         var keyValue = line.substring(2, line.length - 1);
-                        var keyValuePairArray = keyValue.split("|");
+                        var keyValuePairArray = keyValue.split('|');
 
-                        var key = keyValuePairArray[0].replace(/"/g, "").replace(/'/g, "");
-                        var value = eval("({" + keyValuePairArray[1] + "})");
+                        var key = keyValuePairArray[0].replace(/"/g, '').replace(/'/g, '');
+                        var value = eval('({' + keyValuePairArray[1] + '})');
 
                         keys.push(key);
                         if (value.t && value.t.defaultValue) {
@@ -213,7 +213,7 @@ var Parser = (function () {
                         re.lastIndex++;
                     }
                     if (m) {
-                        key = key.replace(m[0], "");
+                        key = key.replace(m[0], '');
                         attr = m[1];
                     }
                 }
@@ -224,16 +224,16 @@ var Parser = (function () {
                         break;
                     default:
                         switch (attr) {
-                            case "text":
+                            case 'text':
                                 value = node.text().trim();
                                 break;
-                            case "prepend":
+                            case 'prepend':
                                 value = node.html().trim();
                                 break;
-                            case "append":
+                            case 'append':
                                 value = node.html().trim();
                                 break;
-                            case "html":
+                            case 'html':
                                 value = node.html().trim();
                                 break;
                             default:
@@ -246,9 +246,9 @@ var Parser = (function () {
                     return;
                 }
 
-                key = key.replace(/\\('|")/g, "$1");
+                key = key.replace(/\\('|")/g, '$1');
 
-                key = key.replace(/\[[a-z]*]/g, "");
+                key = key.replace(/\[[a-z]*]/g, '');
 
                 if (!key) key = value;
                 keys.push(key);
@@ -269,7 +269,7 @@ var Parser = (function () {
                 for (var _iterator = keys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                     var key = _step.value;
 
-                    key = key.replace(/\\('|")/g, "$1");
+                    key = key.replace(/\\('|")/g, '$1');
 
                     if (key.indexOf(this.namespaceSeparator) === -1) {
                         key = this.defaultNamespace + this.keySeparator + key;
@@ -304,22 +304,22 @@ var Parser = (function () {
 
             for (var i = 0, l = this.registry.length; i < l; i++) {
                 key = this.registry[i];
-                this.registryHash = (0, _helpers.hashFromString)(key, "", this.keySeparator, this.registryHash);
+                this.registryHash = (0, _helpers.hashFromString)(key, '', this.keySeparator, this.registryHash);
             }
 
             for (var namespace in this.registryHash) {
                 if (!this.registryHash.hasOwnProperty(namespace)) continue;
 
-                var namespacePath = namespace + ".json";
+                var namespacePath = namespace + '.json';
 
                 var basePath = this.localesPath + "/" + locale + "/";
-                if (this.verbose) _gulpUtil2["default"].log("basePath", basePath);
+                if (this.verbose) _gulpUtil2["default"].log('basePath', basePath);
 
                 if (_gracefulFs2["default"].existsSync(basePath + namespacePath)) {
                     try {
                         currentTranslations = JSON.parse(_gracefulFs2["default"].readFileSync(basePath + namespacePath));
                     } catch (error) {
-                        this.emit("json_error", error.name, error.message);
+                        this.emit('json_error', error.name, error.message);
                         currentTranslations = {};
                     }
                 } else {
@@ -355,7 +355,7 @@ var Parser = (function () {
             this.updateHashes();
 
             if (this.verbose) {
-                _gulpUtil2["default"].log("extracted registry:");
+                _gulpUtil2["default"].log('extracted registry:');
                 _gulpUtil2["default"].log(this.registry);
             }
 
@@ -378,7 +378,7 @@ var Parser = (function () {
                 }
 
                 if (_this4.verbose) {
-                    _gulpUtil2["default"].log("navRoutes found:");
+                    _gulpUtil2["default"].log('navRoutes found:');
                     _gulpUtil2["default"].log(navRoutes);
                 }
 
@@ -399,9 +399,9 @@ var Parser = (function () {
                 var value;
 
                 if (target[key] !== undefined) {
-                    if (typeof source[key] === "object") {
+                    if (typeof source[key] === 'object') {
                         target[key] = _this5.getValuesFromHash(source[key], target[key], transform, node, valuesHash ? valuesHash[key] : valuesHash);
-                    } else if (target[key] === "") {
+                    } else if (target[key] === '') {
                         if (!node) {
                             if (valuesHash) value = valuesHash[key];
                             if (transform === "uppercase") value = (0, _helpers.transformText)(value);
@@ -451,7 +451,7 @@ var Parser = (function () {
             var data, path;
 
             if (file.isStream()) {
-                this.emit("error", new PluginError(PLUGIN_NAME, "Streams are not supported!"));
+                this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
                 return cb();
             }
 

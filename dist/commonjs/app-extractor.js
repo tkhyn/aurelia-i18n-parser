@@ -30,7 +30,7 @@ var AppExtractor = (function () {
 
     _systemjs2["default"].config({
       "baseURL": "./",
-      "transpiler": "babel",
+      "transpiler": 'babel',
       "babelOptions": {
         "stage": 0
       },
