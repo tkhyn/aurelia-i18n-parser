@@ -4,6 +4,6 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="aurelia-i18next-parser node_modules" level="project" />
+    <orderEntry type="library" name="aurelia-i18n-parser node_modules" level="project" />
   </component>
 </module>

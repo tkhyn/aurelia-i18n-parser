@@ -16,6 +16,7 @@
  * @param hash
  * @returns {*|{}}
  */
+
 export function hashFromString(path, value, separator, hash){
   separator = separator || '.';
 

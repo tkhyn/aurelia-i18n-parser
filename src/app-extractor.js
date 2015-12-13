@@ -1,6 +1,5 @@
 import System from "systemjs";
 
-//import "config";
 import "babel/polyfill";
 import "core-js";
 

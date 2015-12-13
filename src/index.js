@@ -15,7 +15,7 @@ var Promise = corejs.Promise;
 
 var PluginError = gutil.PluginError;
 
-const PLUGIN_NAME = "aurelia-i18next-parser";
+const PLUGIN_NAME = "aurelia-i18n-parser";
 
 const OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
 const KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
@@ -28,8 +28,8 @@ export class Parser{
     defaultNamespace ='translation';
     functions = ['t'];
     namespaceSeparator = ":";
-    translation_attribute = "data-i18n";
-    image_src = "data-src";
+    translationAttribute = "data-i18n";
+    imageAttribute = "data-src";
     keySeparator = ".";
     functionsParamsExclude = ['key: string, options: any'];
     appPath = null;
@@ -233,14 +233,14 @@ export class Parser{
     parseDOM(window,$){
         $ = $(window);
         var keys = [];
-        var selector = `[${this.translation_attribute}]`;
+        var selector = `[${this.translationAttribute}]`;
         var nodes = $(selector);
 
         nodes.each(i=>{
             var node = nodes.eq(i);
             var value,key,m;
 
-            key = node.attr(this.translation_attribute);
+            key = node.attr(this.translationAttribute);
 
             var attr = "text";
             //set default attribute to src if this is an image node
@@ -260,7 +260,7 @@ export class Parser{
 
             switch(node[0].nodeName){
                 case "IMG":
-                    value = node.attr(this.image_src);
+                    value = node.attr(this.imageAttribute);
                     break;
                 default:
                     switch(attr){
@@ -600,6 +600,6 @@ export class Parser{
  * @param opts
  * @returns {Stream}
  */
-export function i18next(opts) {
+export function parse(opts) {
     return new Parser(opts).parse();
 }
