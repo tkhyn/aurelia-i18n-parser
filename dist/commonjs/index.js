@@ -62,7 +62,7 @@ var PLUGIN_NAME = "aurelia-i18n-parser";
 
 var OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
 var KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-var KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:\s*(.*?)\s*(?:\||$)/);
+var KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/);
 
 var Parser = (function () {
     function Parser(opts) {
@@ -129,13 +129,13 @@ var Parser = (function () {
 
                     keys.push(key);
 
-                    if (options === undefined) {
+                    if (!options) {
                         return;
                     }
 
                     var defaultValue = undefined;
                     try {
-                        options = OBJ_REGEXP.exec(options)[1];
+                        options = OBJ_REGEXP.exec(options);
 
                         if (options === null) {
                             if (this.shortcutFunction == 'defaultValue') {
@@ -144,7 +144,7 @@ var Parser = (function () {
                             }
                         } else {
                             var kv;
-                            while (kv = KEY_VALUE_REGEXP.exec(options)) {
+                            while (kv = KEY_VALUE_REGEXP.exec(options[1])) {
                                 if (kv[1] == 'defaultValue') {
                                     defaultValue = kv[2];
                                     defaultValue = eval("(" + defaultValue + ")");
@@ -209,8 +209,7 @@ var Parser = (function () {
                             reject(errors);
                             return;
                         }
-                        resolve(_this.parseAureliaBindings(data, path));
-                        resolve(_this.parseDOM(window, _jquery2["default"]));
+                        resolve(_this.parseAureliaBindings(data, path).concat(_this.parseDOM(window, _jquery2["default"])));
                     }
                 });
             });

@@ -41,7 +41,7 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
 
     var OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
     var KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-    var KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:\s*(.*?)\s*(?:\||$)/);
+    var KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/);
 
     var Parser = (function () {
         function Parser(opts) {
@@ -108,13 +108,13 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
 
                         keys.push(key);
 
-                        if (options === undefined) {
+                        if (!options) {
                             return;
                         }
 
                         var defaultValue = undefined;
                         try {
-                            options = OBJ_REGEXP.exec(options)[1];
+                            options = OBJ_REGEXP.exec(options);
 
                             if (options === null) {
                                 if (this.shortcutFunction == 'defaultValue') {
@@ -123,7 +123,7 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
                                 }
                             } else {
                                 var kv;
-                                while (kv = KEY_VALUE_REGEXP.exec(options)) {
+                                while (kv = KEY_VALUE_REGEXP.exec(options[1])) {
                                     if (kv[1] == 'defaultValue') {
                                         defaultValue = kv[2];
                                         defaultValue = eval("(" + defaultValue + ")");
@@ -188,8 +188,7 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
                                 reject(errors);
                                 return;
                             }
-                            resolve(_this.parseAureliaBindings(data, path));
-                            resolve(_this.parseDOM(window, _$["default"]));
+                            resolve(_this.parseAureliaBindings(data, path).concat(_this.parseDOM(window, _$["default"])));
                         }
                     });
                 });

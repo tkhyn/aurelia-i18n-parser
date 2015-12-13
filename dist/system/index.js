@@ -48,7 +48,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
             PLUGIN_NAME = "aurelia-i18n-parser";
             OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
             KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-            KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:\s*(.*?)\s*(?:\||$)/);
+            KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/);
 
             Parser = (function () {
                 function Parser(opts) {
@@ -115,13 +115,13 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
                                 keys.push(key);
 
-                                if (options === undefined) {
+                                if (!options) {
                                     return;
                                 }
 
                                 var defaultValue = undefined;
                                 try {
-                                    options = OBJ_REGEXP.exec(options)[1];
+                                    options = OBJ_REGEXP.exec(options);
 
                                     if (options === null) {
                                         if (this.shortcutFunction == 'defaultValue') {
@@ -130,7 +130,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                         }
                                     } else {
                                         var kv;
-                                        while (kv = KEY_VALUE_REGEXP.exec(options)) {
+                                        while (kv = KEY_VALUE_REGEXP.exec(options[1])) {
                                             if (kv[1] == 'defaultValue') {
                                                 defaultValue = kv[2];
                                                 defaultValue = eval("(" + defaultValue + ")");
@@ -195,8 +195,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                                         reject(errors);
                                         return;
                                     }
-                                    resolve(_this.parseAureliaBindings(data, path));
-                                    resolve(_this.parseDOM(window, $));
+                                    resolve(_this.parseAureliaBindings(data, path).concat(_this.parseDOM(window, $)));
                                 }
                             });
                         });
