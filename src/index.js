@@ -17,6 +17,11 @@ var PluginError = gutil.PluginError;
 
 const PLUGIN_NAME = "aurelia-i18next-parser";
 
+const OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
+const KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
+const KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:\s*(.*?)\s*(?:\||$)/)
+
+
 export class Parser{
 
     verbose = false;
@@ -32,6 +37,8 @@ export class Parser{
     routesModuleId = "routes";
     locales = ['en-US'];
     defaultLocale = "en";
+    shortcutFunction = 'sprintf';
+    bindAttrs = ['bind', 'one-way', 'two-way', 'one-time'];
 
     registry = [];
     values = {};
@@ -67,18 +74,84 @@ export class Parser{
     }
 
     /**
+     * Extract translations from an array of (key, options) strings
+     * @returns {Array}     the extracted translation keys
+     */
+
+    parseKeyOptions(keyOptions, path) {
+        var keys = [],
+            _this2 = this,
+            namespace = this.getNamespace(path);
+
+        var key, options;
+
+        keyOptions.forEach(function(keyOption) {
+
+            [key, options] = keyOption;
+
+            try {
+                key = eval(key.replace(/this./g, ''));
+
+                keys.push(key);
+
+                // try and extract default value from options
+                if (options === undefined) {
+                    return;
+                }
+
+                var defaultValue = undefined;
+                try {
+                    options = OBJ_REGEXP.exec(options)[1];
+
+                    if (options === null) {
+                        // we have a single value, possibly because
+                        // i18next is used with shortcutFunction: 'defaultValue'
+                        // and 'options' is a string that should be evaluated
+                        if (this.shortcutFunction == 'defaultValue') {
+                            defaultValue = options;
+                            defaultValue = eval('(' + defaultValue + ')');
+                        }
+                    } else {
+                        // options is an object, parse the keys
+                        var kv;
+                        while (kv = KEY_VALUE_REGEXP.exec(options)) {
+                            if (kv[1] == 'defaultValue') {
+                                defaultValue = kv[2];
+                                defaultValue = eval(`(${defaultValue})`);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (defaultValue) {
+                        _this2.values[key] = defaultValue;
+                    }
+                } catch (e) {
+                    console.warn(`Unable to parse default value "${defaultValue}" for key "${key}" in file ${path}. Error: ${e}`);
+                }
+            } catch (e) {
+                console.warn(`Unable to parse key "${key}" in file ${path}. Error: ${e}`);
+            }
+
+        });
+
+        return keys;
+    }
+
+
+    /**
      * Extract translations from javascript code.
      *
      * @param data          javascript code as a string
      * @returns {Promise}   resolved when data has been parsed
      */
     parseJavaScript(data, path){
-        var _this2 = this;
         var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
         var pattern = '[^a-zA-Z0-9_](?:'+ fnPattern +')([^);]*)';
         var functionRegex = new RegExp(pattern, 'g');
-        var matches;
-        var keys = [];
+
+        var matches, keyOption;
+        var keyOptions = [];
 
         while( matches = functionRegex.exec(data) ){
             // parameters pairs are always in third element of matches array
@@ -86,33 +159,17 @@ export class Parser{
                 var argsMatch = matches[1]; //replace spaces with empty
                 var argsMatchTrim = argsMatch.replace(/ /g, '');
                 if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatchTrim) < 0) {
-                
-                    var keyValuePairArray = argsMatch.split( /,(.+)/);
-                    var namespace = _this2.getNamespace(path);
 
-                    var key;
-                    try {
-                        var keyPatern = keyValuePairArray[0].replace(/this./g, '');
-                        key = eval(keyPatern);
-                        try {
-                            var value = eval('(' + keyValuePairArray[1]+ ')');
+                    keyOption = argsMatch.split( /,([\s\S]+)/);
 
-                            keys.push(key);                      
-                            if (value && value.defaultValue) {
-                                _this2.values[key] = value.defaultValue;
-                            }
-                        } catch (e) {
-                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
-                        }
-                    } catch (e) {
-                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
+                    if (keyOption && keyOption[0]) {
+                        keyOptions.push(keyOption);
                     }
-                    
                 }
             }
         }
 
-        return Promise.resolve(keys);
+        return Promise.resolve(this.parseKeyOptions(keyOptions, path));
     }
 
     /**
@@ -148,66 +205,22 @@ export class Parser{
     */
     parseAureliaBindings(html, path) {
 
-        var _this2 = this;
+        var bindingsPattern = '(?:\\.(?:' + this.bindAttrs.join('|') + ')\\s*=\\s*(?:"(.*)"|\'(.*)\')|\\$\\{(.*)\\})',
+            bindingsRegex = new RegExp(bindingsPattern, 'g'),
+            keyOptions = [],
+            boundExpr, keyOption;
 
-        //$ = $(window);
-        var keys = [];
-        var text = html; // $('*').text();
+        while(boundExpr = bindingsRegex.exec(html)) {
 
-        if (text) {
-            var textLines = text.split(/\r\n|\r|\n/);
+            keyOption = KEY_VALUE_REGEXP_T.exec(boundExpr[1]);
 
-            textLines.forEach(function (line) {
-                line = line.trim();
+            if (keyOption) {
+                keyOptions.push(keyOption.slice(1));
+            }
 
-                var startInd = line.indexOf('${');
-                var ind = startInd + 2;
-                var bricCounter = 1;
-                while (ind < line.length && bricCounter > 0) {
-                    if (line[ind] == '}') {
-                        bricCounter--;
-                    }
-                    if (line[ind] == '{') {
-                        bricCounter++;
-                    }
-                    ind++;
-                }
-
-                var i18nLine = line.substr(startInd, ind - startInd);
-
-                if (i18nLine.indexOf('|t') > -1) {
-                    var keyValue = i18nLine.substring(2, i18nLine.length - 1);
-                    var keyValuePairArray = keyValue.split('|');
-
-                    var namespace = _this2.getNamespace(path);
-
-                    var key;
-                    try {
-                        key = eval(keyValuePairArray[0]);
-
-                        var value;
-                        try {
-                            value = eval('({' + keyValuePairArray[1] + '})');
-                            keys.push(key);
-                            if (value && value.t && value.t.defaultValue) {
-                                _this2.values[key] = value.t.defaultValue;
-                            }
-
-                        } catch (e) {
-                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
-                        }
-                        
-
-
-                    } catch (e) {
-                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
-                    }
-
-                }
-            });
         }
 
-        return keys;
+        return this.parseKeyOptions(keyOptions, path);
     }
 
     /**
