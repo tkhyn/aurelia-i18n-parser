@@ -75,7 +75,7 @@ export class Parser{
     parseJavaScript(data, path){
         var _this2 = this;
         var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
-        var pattern = '[^a-zA-Z0-9_]((?:'+ fnPattern +')((?:[^);]*())))'
+        var pattern = '[^a-zA-Z0-9_](?:'+ fnPattern +')([^);]*)';
         var functionRegex = new RegExp(pattern, 'g');
         var matches;
         var keys = [];
@@ -83,7 +83,7 @@ export class Parser{
         while( matches = functionRegex.exec(data) ){
             // parameters pairs are always in third element of matches array
             if (matches.length > 1) {
-                var argsMatch = matches[2]; //replace spaces with empty
+                var argsMatch = matches[1]; //replace spaces with empty
                 var argsMatchTrim = argsMatch.replace(/ /g, '');
                 if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatchTrim) < 0) {
                 
