@@ -187,8 +187,7 @@ export class Parser{
                         reject(errors);
                         return;
                     }
-                    resolve(this.parseAureliaBindings(data, path));
-                    resolve(this.parseDOM(window,$));
+                    resolve(this.parseAureliaBindings(data, path).concat(this.parseDOM(window, path)));
                 }
             });
         });
