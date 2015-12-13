@@ -81,9 +81,7 @@ export class Parser{
     parseKeyOptions(keyOptions, path) {
         var keys = [],
             _this2 = this,
-            namespace = this.getNamespace(path);
-
-        var key, options;
+            key, options;
 
         keyOptions.forEach(function(keyOption) {
 
@@ -320,12 +318,6 @@ export class Parser{
             this.registry.push(key);
         }
     }
-
-    getNamespace(path) {
-        var startInd = path.indexOf(this.projectFolderName) + this.projectFolderName.length + 1;
-        var dotInd = path.indexOf('.');
-        return path.substr(startInd, dotInd - startInd).replace(/\\/g, '.');
-    }   
 
     /**
      * Generate translation files from the current registry entries.
