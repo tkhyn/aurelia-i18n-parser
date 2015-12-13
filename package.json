@@ -1,7 +1,7 @@
 {
-  "name": "aurelia-i18next-parser",
+  "name": "aurelia-i18n-parser",
   "description": "Extracts i18n from html and js files together with defaulValues",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "author": "Aaike Van Roekeghem <aaikevr@gmail.com>",
   "keywords": [
@@ -12,10 +12,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/tkhyn/aurelia-i18next-parser"
+    "url": "https://github.com/tkhyn/aurelia-i18n-parser"
   },
   "bugs": {
-    "url": "https://github.com/tkhyn/aurelia-i18next-parser/issues"
+    "url": "https://github.com/tkhyn/aurelia-i18n-parser/issues"
   },
   "scripts": {
     "test": "npm run jshint",
