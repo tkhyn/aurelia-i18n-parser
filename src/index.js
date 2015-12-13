@@ -19,461 +19,566 @@ const PLUGIN_NAME = "aurelia-i18next-parser";
 
 export class Parser{
 
-  verbose = false;
-  defaultNamespace ='translation';
-  functions = ['t'];
-  namespaceSeparator = ":";
-  translation_attribute = "data-i18n";
-  image_src = "data-src";
-  keySeparator = ".";
-  regex = null;
-  appPath = null;
-  localesPath = "src/locales";
-  routesModuleId = "routes";
-  locales = ['en-US'];
-  defaultLocale = "en";
+    verbose = false;
+    defaultNamespace ='translation';
+    functions = ['t'];
+    namespaceSeparator = ":";
+    translation_attribute = "data-i18n";
+    image_src = "data-src";
+    keySeparator = ".";
+    functionsParamsExclude = ['key: string, options: any'];
+    appPath = null;
+    localesPath = "src/locales";
+    routesModuleId = "routes";
+    locales = ['en-US'];
+    defaultLocale = "en";
 
-  registry = [];
-  values = {};
-  nodes = {};
+    registry = [];
+    values = {};
+    nodes = {};
 
-  constructor(opts){
-    if(opts) Object.assign(this,opts);
+    constructor(opts){
+        if(opts) Object.assign(this,opts);
 
-    if(this.appPath) this.extractor = new AppExtractor(this.appPath);
-  }
-
-  parse(){
-    return this.stream = through.obj(this.transformFile.bind(this), this.flush.bind(this));
-  }
-
-  /**
-   * Figures out how to parse the data based on file extension.
-   *
-   * @param path          path to the file
-   * @param data          data of the file
-   * @returns {Promise}   resolved when data has been parsed
-   */
-  parseTranslations(path,data){
-    var ext = this.getExtension(path);
-    switch(ext){
-      case 'html':
-        if(this.verbose) gutil.log("parse HTML:",path);
-        return this.parseHTML(data);
-      default:
-        if(this.verbose) gutil.log("parse JS:",path);
-        return this.parseJavaScript(data);
-    }
-  }
-
-  /**
-   * Extract translations from javascript code.
-   *
-   * @param data          javascript code as a string
-   * @returns {Promise}   resolved when data has been parsed
-   */
-  parseJavaScript(data){
-
-    var fnPattern = '(?:' + this.functions.join(')|(?:').replace('.', '\\.') + ')';
-    var pattern = '[^a-zA-Z0-9_](?:' + fnPattern + ')(?:\\(|\\s)\\s*(?:(?:\'((?:(?:\\\\\')?[^\']*)+[^\\\\])\')|(?:"((?:(?:\\\\")?[^"]*)+[^\\\\])"))';
-    var functionRegex = new RegExp(this.regex || pattern, 'g');
-    var matches;
-    var keys = [];
-
-    while(( matches = functionRegex.exec(data) )){
-      // the key should be the first truthy match
-      for(var i of matches){
-        if(i > 0 && matches[i]) keys.push(matches[i]);
-      }
+        if(this.appPath) this.extractor = new AppExtractor(this.appPath);
     }
 
-    return Promise.resolve(keys);
-  }
+    parse(){
+        return this.stream = through.obj(this.transformFile.bind(this), this.flush.bind(this));
+    }
 
-  /**
-   * Extract translations from html markup.
-   *
-   * @param data          html markup as a string
-   * @returns {Promise}   resolved when data has been parsed
-   */
-  parseHTML(data){
-    return new Promise((resolve, reject) =>{
-      jsdom.env({
-        html: data,
-        done: (errors, window)=>{
-          if(errors){
-            //throw new new PluginError(PLUGIN_NAME, 'Streams are not supported!');
-            gutil.log(errors);
-            reject(errors);
-            return;
-          }
-          resolve(this.parseDOM(window,$));
-        }
-      });
-    });
-  }
-
-  /**
-   * Extract translations from html markup.
-   *
-   * @param window          a jsdom window
-   * @param $               jquery
-   * @returns {Array}       extracted keys
-   */
-  parseDOM(window,$){
-    $ = $(window);
-    var keys = [];
-    var selector = `[${this.translation_attribute}]`;
-    var nodes = $(selector);
-
-    nodes.each(i=>{
-      var node = nodes.eq(i);
-      var value,key,m;
-
-      key = node.attr(this.translation_attribute);
-
-      var attr = "text";
-      //set default attribute to src if this is an image node
-      if(node[0].nodeName==="IMG") attr = "src";
-
-      var re = /\[([a-z]*)]/g;
-      //check if a attribute was specified in the key
-      while ((m = re.exec(key)) !== null) {
-        if (m.index === re.lastIndex) {
-          re.lastIndex++;
-        }
-        if(m){
-          key = key.replace(m[0],'');
-          attr = m[1];
-        }
-      }
-
-      switch(node[0].nodeName){
-        case "IMG":
-          value = node.attr(this.image_src);
-          break;
-        default:
-          switch(attr){
-            case 'text':
-              value = node.text().trim();
-              break;
-            case 'prepend':
-              value = node.html().trim();
-              break;
-            case 'append':
-              value = node.html().trim();
-              break;
+    /**
+     * Figures out how to parse the data based on file extension.
+     *
+     * @param path          path to the file
+     * @param data          data of the file
+     * @returns {Promise}   resolved when data has been parsed
+     */
+    parseTranslations(path,data){
+        var ext = this.getExtension(path);
+        switch(ext){
             case 'html':
-              value = node.html().trim();
-              break;
-            default: //custom attribute
-              value = node.attr(attr);
-              break;
-          }
-      }
-
-      //skip keys with interpolations
-      if(key.indexOf("${") > -1){
-        return;
-      }
-
-      // remove the backslash from escaped quotes
-      key = key.replace(/\\('|")/g, '$1');
-
-      // remove the optional attribute
-      key = key.replace(/\[[a-z]*]/g, '');
-
-      if(!key) key = value;
-      keys.push(key);
-      this.values[key] = value;
-      this.nodes[key] = node;
-    });
-
-    return keys;
-  }
-
-  /**
-   * Parse and add keys to the registry.
-   * @param keys
-   */
-  addToRegistry(keys){
-    for(let key of keys){
-      // remove the backslash from escaped quotes
-      key = key.replace(/\\('|")/g, '$1');
-
-      if(key.indexOf(this.namespaceSeparator) === -1){
-        key = this.defaultNamespace + this.keySeparator + key;
-      }else{
-        key = key.replace(this.namespaceSeparator, this.keySeparator);
-      }
-
-      this.registry.push(key);
-    }
-  }
-
-  /**
-   * Generate translation files from the current registry entries.
-   *
-   * @param locale
-   */
-  generateTranslation(locale){
-
-    var mergedTranslations, currentTranslations, oldTranslations, key;
-
-    this.registryHash = {};
-
-    // turn the array of keys
-    // into an associative object
-    // ==========================
-    for(var i = 0, l = this.registry.length; i < l; i++){
-      key = this.registry[i];
-      this.registryHash = hashFromString(key, '', this.keySeparator, this.registryHash);
-    }
-
-    for(var namespace in this.registryHash){
-      if(!this.registryHash.hasOwnProperty(namespace)) continue;
-
-      // get previous version of the files
-      var namespacePath = namespace + '.json';
-      var namespaceOldPath = namespace + '_old.json';
-
-      var basePath = process.cwd()+"/"+this.localesPath+"/"+locale+"/";
-      if(this.verbose) gutil.log('basePath', basePath);
-
-      if(fs.existsSync(basePath+namespacePath)){
-        try{
-          currentTranslations = JSON.parse(fs.readFileSync(basePath+namespacePath));
-        }catch(error){
-          this.emit('json_error', error.name, error.message);
-          currentTranslations = {};
+                if(this.verbose) gutil.log("parse HTML:",path);
+                return this.parseHTML(data, path);
+            default:
+                if(this.verbose) gutil.log("parse JS:",path);
+                return this.parseJavaScript(data, path);
         }
-      }else{
-        currentTranslations = {};
-      }
-
-      if(fs.existsSync(basePath+namespaceOldPath)){
-        try{
-          oldTranslations = JSON.parse(fs.readFileSync(basePath+namespaceOldPath));
-        }
-        catch(error){
-          this.emit('json_error', error.name, error.message);
-          currentTranslations = {};
-        }
-      }
-      else{
-        oldTranslations = {};
-      }
-
-      // merges existing translations with the new ones
-      mergedTranslations = mergeHash(currentTranslations, Object.assign({}, this.registryHash[namespace]));
-
-      // restore old translations if the key is empty
-      mergedTranslations.new = replaceEmpty(oldTranslations, mergedTranslations.new);
-
-      var transform = null;
-      //transform values found in the html to uppercase if this is not the default language
-      if(locale !== this.defaultLocale) transform = "uppercase";
-
-      mergedTranslations.new = this.getValuesFromHash(this.valuesHash, mergedTranslations.new,transform,this.nodesHash,this.valuesHash);
-
-      // merges former old translations with the new ones
-      mergedTranslations.old = _.extend(oldTranslations, mergedTranslations.new);
-
-      // push files back to the stream
-      var mergedTranslationsFile = new File({
-        path: locale+"/"+namespacePath,
-        //base: locale,
-        contents: new Buffer(JSON.stringify(mergedTranslations.new, null, 2))
-      });
-      var mergedOldTranslationsFile = new File({
-        path: locale+"/"+namespaceOldPath,
-        //base: locale,
-        contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
-      });
-
-      /*if(this.verbose){
-        gutil.log('writing', locale+"/"+namespacePath);
-        gutil.log('writing', locale+"/"+namespaceOldPath);
-      }*/
-
-      this.stream.push(mergedTranslationsFile);
-      this.stream.push(mergedOldTranslationsFile);
     }
 
-  }
+    /**
+     * Extract translations from javascript code.
+     *
+     * @param data          javascript code as a string
+     * @returns {Promise}   resolved when data has been parsed
+     */
+    parseJavaScript(data, path){
+        var _this2 = this;
+        var fnPattern = '(?:' + this.functions.join('\\()|(?:').replace('.', '\\.') + '\\()';
+        var pattern = '[^a-zA-Z0-9_]((?:'+ fnPattern +')((?:[^);]*())))'
+        var functionRegex = new RegExp(pattern, 'g');
+        var matches;
+        var keys = [];
 
-  /**
-   * Generate translations for all locales from the registry
-   */
-  generateAllTranslations(){
-    this.updateHashes();
+        while( matches = functionRegex.exec(data) ){
+            // parameters pairs are always in third element of matches array
+            if (matches.length > 1) {
+                var argsMatch = matches[2]; //replace spaces with empty
+                var argsMatchTrim = argsMatch.replace(/ /g, '');
+                if (!this.functionsParamsExclude || this.functionsParamsExclude.map(function(item) {return item.replace(/ /g, '');}).indexOf(argsMatchTrim) < 0) {
+                
+                    var keyValuePairArray = argsMatch.split( /,(.+)/);
+                    var namespace = _this2.getNamespace(path);
 
-    if(this.verbose) {
-      gutil.log('extracted registry:');
-      gutil.log(this.registry);
-    }
+                    var key;
+                    try {
+                        var keyPatern = keyValuePairArray[0].replace(/this./g, '');
+                        key = eval(keyPatern);
+                        try {
+                            var value = eval('(' + keyValuePairArray[1]+ ')');
 
-    for(var i = 0, l = this.locales.length; i < l; i++){
-      this.generateTranslation(this.locales[i]);
-    }
-  }
-
-  /**
-   * Extract translations from the Aurelia app.
-   *
-   * @returns {Promise}
-   */
-  extractFromApp(){
-   return this.extractor.getNavFromRoutes(this.routesModuleId)
-    .then(navRoutes=>{
-        if(!navRoutes) return null;
-
-        for(var i = 0, l = navRoutes.length; i < l; i++){
-          var item = navRoutes[i];
-          this.values[item.i18n] = item.title;
-          this.registry.push(this.defaultNamespace + this.keySeparator + item.i18n);
+                            keys.push(key);                      
+                            if (value && value.defaultValue) {
+                                _this2.values[key] = value.defaultValue;
+                            }
+                        } catch (e) {
+                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
+                        }
+                    } catch (e) {
+                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
+                    }
+                    
+                }
+            }
         }
 
-        if(this.verbose){
-          gutil.log('navRoutes found:');
-          gutil.log(navRoutes)
+        return Promise.resolve(keys);
+    }
+
+    /**
+     * Extract translations from html markup.
+     *
+     * @param data          html markup as a string
+     * @returns {Promise}   resolved when data has been parsed
+     */
+    parseHTML(data, path){
+        return new Promise((resolve, reject) =>{
+            jsdom.env({
+                html: data,
+                done: (errors, window)=>{
+                    if(errors){
+                        //throw new new PluginError(PLUGIN_NAME, 'Streams are not supported!');
+                        gutil.log(errors);
+                        reject(errors);
+                        return;
+                    }
+                    resolve(this.parseAureliaBindings(data, path));
+                    resolve(this.parseDOM(window,$));
+                }
+            });
+        });
+    }
+
+    /**
+    * Extract translations from aurelia bindnigs.
+    *
+    * @param window          a jsdom window
+    * @param $               jquery
+    * @returns {Array}       extracted keys
+    */
+    parseAureliaBindings(html, path) {
+
+        var _this2 = this;
+
+        //$ = $(window);
+        var keys = [];
+        var text = html; // $('*').text();
+
+        if (text) {
+            var textLines = text.split(/\r\n|\r|\n/);
+
+            textLines.forEach(function (line) {
+                line = line.trim();
+
+                var startInd = line.indexOf('${');
+                var ind = startInd + 2;
+                var bricCounter = 1;
+                while (ind < line.length && bricCounter > 0) {
+                    if (line[ind] == '}') {
+                        bricCounter--;
+                    }
+                    if (line[ind] == '{') {
+                        bricCounter++;
+                    }
+                    ind++;
+                }
+
+                var i18nLine = line.substr(startInd, ind - startInd);
+
+                if (i18nLine.indexOf('|t') > -1) {
+                    var keyValue = i18nLine.substring(2, i18nLine.length - 1);
+                    var keyValuePairArray = keyValue.split('|');
+
+                    var namespace = _this2.getNamespace(path);
+
+                    var key;
+                    try {
+                        key = eval(keyValuePairArray[0]);
+
+                        var value;
+                        try {
+                            value = eval('({' + keyValuePairArray[1] + '})');
+                            keys.push(key);
+                            if (value && value.t && value.t.defaultValue) {
+                                _this2.values[key] = value.t.defaultValue;
+                            }
+
+                        } catch (e) {
+                            console.warn('Unable to parse: ' + keyValuePairArray[1] + '. Error: ' + e);
+                        }
+                        
+
+
+                    } catch (e) {
+                        console.warn('Unable to parse key: ' + keyValuePairArray[0] + '. Error: ' + e);
+                    }
+
+                }
+            });
         }
 
-        return null;
-      });
-  }
+        return keys;
+    }
 
-  /**
-   * Takes a `target` hash and replace its empty
-   * values with the `source` hash ones if they exist
-   *
-   * @param source
-   * @param target
-   * @param transform
-   * @param nodesHash
-   * @param valuesHash
-   * @returns {*|{}}
-   */
-  getValuesFromHash(source, target,transform,nodesHash,valuesHash){
-    target = target || {};
+    /**
+     * Extract translations from html markup.
+     *
+     * @param window          a jsdom window
+     * @param $               jquery
+     * @returns {Array}       extracted keys
+     */
+    parseDOM(window,$){
+        $ = $(window);
+        var keys = [];
+        var selector = `[${this.translation_attribute}]`;
+        var nodes = $(selector);
 
-    Object.keys(source).forEach((key)=>{
+        nodes.each(i=>{
+            var node = nodes.eq(i);
+            var value,key,m;
 
-      var node = null;
-      if(nodesHash) node = nodesHash[key];
-      var value;
+            key = node.attr(this.translation_attribute);
 
-      if(target[key] !== undefined){
-        if(typeof source[key] === 'object'){
-          target[key] = this.getValuesFromHash(source[key], target[key], transform, node,(valuesHash)? valuesHash[key] : valuesHash);
-        }else if(target[key] === ''){
-          if(!node) {
-            //try to find in values
-            if(valuesHash)value = valuesHash[key];
-            if(transform === "uppercase") value = transformText(value);
-          }else{
-            value = source[key];
-            if(transform === "uppercase" && node[0].nodeName !== "IMG") value = transformText(value);
-          }
-          target[key] = value;
+            var attr = "text";
+            //set default attribute to src if this is an image node
+            if(node[0].nodeName==="IMG") attr = "src";
+
+            var re = /\[([a-z]*)]/g;
+            //check if a attribute was specified in the key
+            while ((m = re.exec(key)) !== null) {
+                if (m.index === re.lastIndex) {
+                    re.lastIndex++;
+                }
+                if(m){
+                    key = key.replace(m[0],'');
+                    attr = m[1];
+                }
+            }
+
+            switch(node[0].nodeName){
+                case "IMG":
+                    value = node.attr(this.image_src);
+                    break;
+                default:
+                    switch(attr){
+                        case 'text':
+                            value = node.text().trim();
+                            break;
+                        case 'prepend':
+                            value = node.html().trim();
+                            break;
+                        case 'append':
+                            value = node.html().trim();
+                            break;
+                        case 'html':
+                            value = node.html().trim();
+                            break;
+                        default: //custom attribute
+                            value = node.attr(attr);
+                            break;
+                    }
+            }
+
+            //skip keys with interpolations
+            if(key.indexOf("${") > -1){
+                return;
+            }
+
+            // remove the backslash from escaped quotes
+            key = key.replace(/\\('|")/g, '$1');
+
+            // remove the optional attribute
+            key = key.replace(/\[[a-z]*]/g, '');
+
+            if(!key) key = value;
+            keys.push(key);
+            this.values[key] = value;
+            this.nodes[key] = node;
+        });
+
+        return keys;
+    }
+
+    /**
+     * Parse and add keys to the registry.
+     * @param keys
+     */
+    addToRegistry(keys){
+        for(let key of keys){
+        // remove the backslash from escaped quotes
+            key = key.replace(/\\('|")/g, '$1');
+
+            if(key.indexOf(this.namespaceSeparator) === -1){
+                key = this.defaultNamespace + this.keySeparator + key;
+            }else{
+                key = key.replace(this.namespaceSeparator, this.keySeparator);
+            }
+
+            this.registry.push(key);
         }
-      }
-    });
-
-    return target;
-  }
-
-  /**
-   * Get the file extension from a filepath.
-   *
-   * @param path        path to analyze
-   * @returns {string}  the extracted file extension
-   */
-  getExtension(path){
-    return path.substr(path.lastIndexOf(".") + 1);
-  }
-
-  /**
-   * Update hashes.
-   */
-  updateHashes(){
-
-    this.translationsHash = {};
-    this.valuesHash = {};
-    this.nodesHash = {};
-
-    var key;
-
-    // remove duplicate keys
-    this.translations = _.uniq(this.translations).sort();
-
-    //create hash for values
-    for(key in this.values){
-      if(!this.values.hasOwnProperty(key)) continue;
-      this.valuesHash = hashFromString(key, this.values[key], this.keySeparator, this.valuesHash);
-    }
-    //create hash for nodes
-    for(key in this.nodes){
-      if(!this.nodes.hasOwnProperty(key)) continue;
-      this.nodesHash = hashFromString(key, this.nodes[key], this.keySeparator, this.nodesHash);
-    }
-  }
-
-  //--------- Steam functions
-
-  transformFile(file, encoding, cb) {
-
-    var data,path;
-
-    // we do not handle streams
-    if (file.isStream()) {
-      this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
-      return cb();
     }
 
-    //read the file manually if a filepath was passed.
-    if(file.isNull()){
-      path = file.path;
-      if(file.stat.isDirectory()){
-        return cb();
-      }else if(path && fs.existsSync(path)){
-        data = fs.readFileSync(path);
-      }else{
-        this.emit("error", new PluginError(PLUGIN_NAME, "File has no content and is not readable"));
-        return cb();
-      }
+    getNamespace(path) {
+        var startInd = path.indexOf(this.projectFolderName) + this.projectFolderName.length + 1;
+        var dotInd = path.indexOf('.');
+        return path.substr(startInd, dotInd - startInd).replace(/\\/g, '.');
+    }   
+
+    /**
+     * Generate translation files from the current registry entries.
+     *
+     * @param locale
+     */
+    generateTranslation(locale){
+
+        var mergedTranslations, currentTranslations, oldTranslations, key;
+
+        this.registryHash = {};
+
+        // turn the array of keys
+        // into an associative object
+        // ==========================
+        for(var i = 0, l = this.registry.length; i < l; i++){
+            key = this.registry[i];
+            this.registryHash = hashFromString(key, '', this.keySeparator, this.registryHash);
+        }
+
+        for(var namespace in this.registryHash){
+            if(!this.registryHash.hasOwnProperty(namespace)) continue;
+
+            // get previous version of the files
+            var namespacePath = namespace + '.json';
+            //var namespaceOldPath = namespace + '_old.json';
+
+            var basePath = this.localesPath+"/"+locale+"/";
+            if(this.verbose) gutil.log('basePath', basePath);
+
+            if(fs.existsSync(basePath+namespacePath)){
+                try{
+                    currentTranslations = JSON.parse(fs.readFileSync(basePath+namespacePath));
+                }catch(error){
+                    this.emit('json_error', error.name, error.message);
+                    currentTranslations = {};
+                }
+            }else{
+                currentTranslations = {};
+            }
+
+            //if(fs.existsSync(basePath+namespaceOldPath)){
+            //  try{
+            //    oldTranslations = JSON.parse(fs.readFileSync(basePath+namespaceOldPath));
+            //  }
+            //  catch(error){
+            //    this.emit('json_error', error.name, error.message);
+            //    currentTranslations = {};
+            //  }
+            //}
+            //else{
+            //  oldTranslations = {};
+            //}
+
+            oldTranslations = {};
+
+            // merges existing translations with the new ones
+            mergedTranslations = mergeHash(currentTranslations, Object.assign({}, this.registryHash[namespace]));
+
+            // restore old translations if the key is empty
+            mergedTranslations.new = replaceEmpty(oldTranslations, mergedTranslations.new);
+
+            var transform = null;
+            //transform values found in the html to uppercase if this is not the default language
+            if(locale !== this.defaultLocale) transform = "uppercase";
+
+            mergedTranslations.new = this.getValuesFromHash(this.valuesHash, mergedTranslations.new,transform,this.nodesHash,this.valuesHash);
+
+            // merges former old translations with the new ones
+            mergedTranslations.old = _.extend(oldTranslations, mergedTranslations.new);
+
+            // push files back to the stream
+            var mergedTranslationsFile = new File({
+                path: locale+"/"+namespacePath,
+                //base: locale,
+                contents: new Buffer(JSON.stringify(mergedTranslations.new, null, 2))
+            });
+            //var mergedOldTranslationsFile = new File({
+            //  path: locale+"/"+namespaceOldPath,
+            //  //base: locale,
+            //  contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
+            //});
+
+            /*if(this.verbose){
+              gutil.log('writing', locale+"/"+namespacePath);
+              gutil.log('writing', locale+"/"+namespaceOldPath);
+            }*/
+
+            this.stream.push(mergedTranslationsFile);
+            //this.stream.push(mergedOldTranslationsFile);
+        }
+
     }
 
-    if (file.isBuffer()) {
-      path = file.path.replace(process.cwd()+"/","");
-      data = file.contents.toString();
+    /**
+     * Generate translations for all locales from the registry
+     */
+    generateAllTranslations(){
+        this.updateHashes();
+
+        if(this.verbose) {
+            gutil.log('extracted registry:');
+            gutil.log(this.registry);
+        }
+
+        for(var i = 0, l = this.locales.length; i < l; i++){
+            this.generateTranslation(this.locales[i]);
+        }
     }
 
-    //skip if no data was found
-    if(!data) return cb();
+    /**
+     * Extract translations from the Aurelia app.
+     *
+     * @returns {Promise}
+     */
+    extractFromApp(){
+        return this.extractor.getNavFromRoutes(this.routesModuleId)
+         .then(navRoutes=>{
+             if(!navRoutes) return null;
 
-    data = this.parseTranslations(path,data).then(keys=>{
-      this.addToRegistry(keys);
-      // tell the stream engine that we are done with this file
-      cb();
-    });
+             for(var i = 0, l = navRoutes.length; i < l; i++){
+                 var item = navRoutes[i];
+                 this.values[item.i18n] = item.title;
+                 this.registry.push(this.defaultNamespace + this.keySeparator + item.i18n);
+             }
 
-    // make sure the file goes through the next gulp plugin
-    //this.push(file);
-  }
+             if(this.verbose){
+                 gutil.log('navRoutes found:');
+                 gutil.log(navRoutes)
+             }
 
-  flush(cb){
-    //extract values from the aurelia application where possible
-    if(this.extractor){
-      this.extractFromApp().then(()=>{
-        this.generateAllTranslations();
-        cb();
-      });
-    }else{
-      this.generateAllTranslations();
-      cb();
+             return null;
+         });
     }
-  }
+
+    /**
+     * Takes a `target` hash and replace its empty
+     * values with the `source` hash ones if they exist
+     *
+     * @param source
+     * @param target
+     * @param transform
+     * @param nodesHash
+     * @param valuesHash
+     * @returns {*|{}}
+     */
+    getValuesFromHash(source, target,transform,nodesHash,valuesHash){
+        target = target || {};
+
+        Object.keys(source).forEach((key)=>{
+
+            var node = null;
+            if(nodesHash) node = nodesHash[key];
+            var value;
+
+            if(target[key] !== undefined){
+                if(typeof source[key] === 'object'){
+                    target[key] = this.getValuesFromHash(source[key], target[key], transform, node,(valuesHash)? valuesHash[key] : valuesHash);
+                }else if(target[key] === ''){
+                    if(!node) {
+                        //try to find in values
+                        if(valuesHash)value = valuesHash[key];
+                        if(transform === "uppercase") value = transformText(value);
+                    }else{
+                        value = source[key];
+                        if(transform === "uppercase" && node[0].nodeName !== "IMG") value = transformText(value);
+                    }
+                    target[key] = value;
+                }
+            }
+        });
+
+        return target;
+    }
+
+    /**
+     * Get the file extension from a filepath.
+     *
+     * @param path        path to analyze
+     * @returns {string}  the extracted file extension
+     */
+    getExtension(path){
+        return path.substr(path.lastIndexOf(".") + 1);
+    }
+
+    /**
+     * Update hashes.
+     */
+    updateHashes(){
+
+        this.translationsHash = {};
+        this.valuesHash = {};
+        this.nodesHash = {};
+
+        var key;
+
+        // remove duplicate keys
+        this.translations = _.uniq(this.translations).sort();
+
+        //create hash for values
+        for(key in this.values){
+            if(!this.values.hasOwnProperty(key)) continue;
+            this.valuesHash = hashFromString(key, this.values[key], this.keySeparator, this.valuesHash);
+        }
+        //create hash for nodes
+        for(key in this.nodes){
+            if(!this.nodes.hasOwnProperty(key)) continue;
+            this.nodesHash = hashFromString(key, this.nodes[key], this.keySeparator, this.nodesHash);
+        }
+    }
+
+    //--------- Steam functions
+
+    transformFile(file, encoding, cb) {
+
+        var data,path;
+
+        // we do not handle streams
+        if (file.isStream()) {
+            this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
+            return cb();
+        }
+
+        //read the file manually if a filepath was passed.
+        if(file.isNull()){
+            path = file.path;
+            if(file.stat.isDirectory()){
+                return cb();
+            }else if(path && fs.existsSync(path)){
+                data = fs.readFileSync(path);
+            }else{
+                this.emit("error", new PluginError(PLUGIN_NAME, "File has no content and is not readable"));
+                return cb();
+            }
+        }
+
+        if (file.isBuffer()) {
+            path = file.path.replace(process.cwd()+"/","");
+            data = file.contents.toString();
+        }
+
+        //skip if no data was found
+        if(!data) return cb();
+
+        data = this.parseTranslations(path,data).then(keys=>{
+            this.addToRegistry(keys);
+            // tell the stream engine that we are done with this file
+            cb();
+        });
+
+        // make sure the file goes through the next gulp plugin
+        //this.push(file);
+    }
+
+    flush(cb){
+        //extract values from the aurelia application where possible
+        if(this.extractor){
+            this.extractFromApp().then(()=>{
+                this.generateAllTranslations();
+                cb();
+            });
+        }else{
+            this.generateAllTranslations();
+            cb();
+        }
+    }
 }
 
 /**
@@ -483,5 +588,5 @@ export class Parser{
  * @returns {Stream}
  */
 export function i18next(opts) {
-  return new Parser(opts).parse();
+    return new Parser(opts).parse();
 }

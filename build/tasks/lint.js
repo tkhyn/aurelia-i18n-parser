@@ -2,7 +2,7 @@ var gulp = require('gulp');
 var jshint = require('gulp-jshint');
 var stylish = require('jshint-stylish');
 
-var dirs = gulp.pkg.directories;
+var dirs = require('../../defaults').pkg.directories;
 
 /**
  * Lint the javascript files for syntax errors.

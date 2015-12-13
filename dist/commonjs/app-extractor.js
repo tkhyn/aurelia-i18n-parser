@@ -1,69 +1,66 @@
 "use strict";
 
-var _interopRequireWildcard = function (obj) { return obj && obj.__esModule ? obj : { "default": obj }; };
-
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-var _System = require("systemjs");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var _System2 = _interopRequireWildcard(_System);
+var _systemjs = require("systemjs");
 
-require("config");
+var _systemjs2 = _interopRequireDefault(_systemjs);
 
 require("babel/polyfill");
 
 require("core-js");
 
-var _corejs = require("core-js");
+var _coreJs = require("core-js");
 
-var _corejs2 = _interopRequireWildcard(_corejs);
+var _coreJs2 = _interopRequireDefault(_coreJs);
 
-var Promise = _corejs2["default"].Promise;
+var Promise = _coreJs2["default"].Promise;
 
 var AppExtractor = (function () {
-  function AppExtractor(appPath) {
-    _classCallCheck(this, AppExtractor);
+    function AppExtractor(appPath) {
+        _classCallCheck(this, AppExtractor);
 
-    this.appPath = appPath;
-  }
-
-  _createClass(AppExtractor, [{
-    key: "getNavFromRoutes",
-    value: function getNavFromRoutes(moduleId) {
-
-      _System2["default"].config({
-        baseURL: "./",
-        transpiler: "babel",
-        babelOptions: {
-          stage: 0
-        },
-        paths: {
-          "*": this.appPath + "/*.js"
-        }
-      });
-
-      if (!moduleId) Promise.resolve(null);
-
-      return new Promise(function (resolve, reject) {
-        return _System2["default"]["import"](moduleId).then(function (m) {
-          var navRoutes = [];
-          for (var i = 0, l = m.routes.length; i < l; i++) {
-            var route = m.routes[i];
-            if (route.nav) navRoutes.push(route);
-          }
-          resolve(navRoutes);
-        });
-      });
+        this.appPath = appPath;
     }
-  }]);
 
-  return AppExtractor;
+    _createClass(AppExtractor, [{
+        key: "getNavFromRoutes",
+        value: function getNavFromRoutes(moduleId) {
+            _systemjs2["default"].config({
+                "baseURL": "./",
+                "transpiler": 'babel',
+                "babelOptions": {
+                    "stage": 0
+                },
+                "paths": {
+                    "*": this.appPath + "/*.js"
+                }
+            });
+
+            if (!moduleId) Promise.resolve(null);
+
+            return new Promise(function (resolve, reject) {
+                return _systemjs2["default"]["import"](moduleId).then(function (m) {
+                    var navRoutes = [];
+                    for (var i = 0, l = m.routes.length; i < l; i++) {
+                        var route = m.routes[i];
+                        if (route.nav) navRoutes.push(route);
+                    }
+                    resolve(navRoutes);
+                });
+            });
+        }
+    }]);
+
+    return AppExtractor;
 })();
 
 exports.AppExtractor = AppExtractor;

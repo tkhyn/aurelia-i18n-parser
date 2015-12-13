@@ -1,8 +1,9 @@
 var gulp = require('gulp');
-var dirs = gulp.pkg.directories;
+var dirs = require('../../defaults').pkg.directories;
+
 
 gulp.task('watch', function() {
-  gulp.watch(dirs.lib+"/**/*.js", ['build-commonjs']).on('change', reportChange);
+    gulp.watch(dirs.lib + "/**/*.js", ['build-commonjs']).on('change', reportChange);
 });
 
 // outputs changes to files to the console
