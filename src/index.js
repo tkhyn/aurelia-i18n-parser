@@ -19,7 +19,7 @@ const PLUGIN_NAME = "aurelia-i18n-parser";
 
 const OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
 const KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-const KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:\s*(.*?)\s*(?:\||$)/)
+const KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/)
 
 
 export class Parser{
@@ -93,13 +93,13 @@ export class Parser{
                 keys.push(key);
 
                 // try and extract default value from options
-                if (options === undefined) {
+                if (!options) {
                     return;
                 }
 
                 var defaultValue = undefined;
                 try {
-                    options = OBJ_REGEXP.exec(options)[1];
+                    options = OBJ_REGEXP.exec(options);
 
                     if (options === null) {
                         // we have a single value, possibly because
@@ -112,7 +112,7 @@ export class Parser{
                     } else {
                         // options is an object, parse the keys
                         var kv;
-                        while (kv = KEY_VALUE_REGEXP.exec(options)) {
+                        while (kv = KEY_VALUE_REGEXP.exec(options[1])) {
                             if (kv[1] == 'defaultValue') {
                                 defaultValue = kv[2];
                                 defaultValue = eval(`(${defaultValue})`);
@@ -187,7 +187,7 @@ export class Parser{
                         reject(errors);
                         return;
                     }
-                    resolve(this.parseAureliaBindings(data, path).concat(this.parseDOM(window, path)));
+                    resolve(this.parseAureliaBindings(data, path).concat(this.parseDOM(window, $)));
                 }
             });
         });
