@@ -43,3 +43,14 @@ Also tries to extract Aurelia specific values like the routes with a navigation.
 - **defaultNamespace** `'translation'`: the default namespace, should match aurelia-i18n / i18next's setting
 - **namespaceSeparator** `":"`: the namespace separator, should match aurelia-i18n / i18next's setting
 - **keySeparator** `"."`: the key separator, should match aurelia-i18n / i18next's setting
+
+
+## Todo list
+
+- log of added/changed keys
+- option to generate hash keys (à la i18next-text):
+  - texts in source code are translations for default language
+  - i18next keys are hashes of source code texts
+  - texts can be replaced by keys in compiled js
+- translators comments
+- discarded translations file for automatic translations
