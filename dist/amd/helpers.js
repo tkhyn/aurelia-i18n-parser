@@ -1,4 +1,4 @@
-define(['exports'], function (exports) {
+define(['exports', 'graceful-fs'], function (exports, _gracefulFs) {
   'use strict';
 
   Object.defineProperty(exports, '__esModule', {
@@ -8,6 +8,11 @@ define(['exports'], function (exports) {
   exports.mergeHash = mergeHash;
   exports.replaceEmpty = replaceEmpty;
   exports.transformText = transformText;
+  exports.loadFromJSONFile = loadFromJSONFile;
+
+  function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+  var _fs = _interopRequireDefault(_gracefulFs);
 
   function hashFromString(path, value, separator, hash) {
     separator = separator || '.';
@@ -96,6 +101,19 @@ define(['exports'], function (exports) {
       if (m[2]) str = str.replace(m[2], m[2].toUpperCase());
     }
     return str;
+  }
+
+  function loadFromJSONFile(path) {
+    if (_fs['default'].existsSync(path)) {
+      try {
+        return JSON.parse(_fs['default'].readFileSync(path));
+      } catch (error) {
+        this.emit('json_error', error.name, error.message);
+        return {};
+      }
+    } else {
+      return {};
+    }
   }
 });
 //# sourceMappingURL=helpers.js.map

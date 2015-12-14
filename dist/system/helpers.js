@@ -1,5 +1,7 @@
-System.register([], function (_export) {
+System.register(['graceful-fs'], function (_export) {
   'use strict';
+
+  var fs;
 
   _export('hashFromString', hashFromString);
 
@@ -8,6 +10,8 @@ System.register([], function (_export) {
   _export('replaceEmpty', replaceEmpty);
 
   _export('transformText', transformText);
+
+  _export('loadFromJSONFile', loadFromJSONFile);
 
   function hashFromString(path, value, separator, hash) {
     separator = separator || '.';
@@ -98,8 +102,23 @@ System.register([], function (_export) {
     return str;
   }
 
+  function loadFromJSONFile(path) {
+    if (fs.existsSync(path)) {
+      try {
+        return JSON.parse(fs.readFileSync(path));
+      } catch (error) {
+        this.emit('json_error', error.name, error.message);
+        return {};
+      }
+    } else {
+      return {};
+    }
+  }
+
   return {
-    setters: [],
+    setters: [function (_gracefulFs) {
+      fs = _gracefulFs['default'];
+    }],
     execute: function () {}
   };
 });

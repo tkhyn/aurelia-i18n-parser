@@ -5,7 +5,7 @@ import fs from "graceful-fs";
 import jsdom from "jsdom";
 import $ from "jquery";
 
-import {hashFromString,mergeHash,replaceEmpty,transformText} from "./helpers";
+import {hashFromString, mergeHash, replaceEmpty, transformText, loadFromJSONFile} from "./helpers";
 import path from "path";
 import File from "vinyl";
 import {AppExtractor} from "./app-extractor";
@@ -344,37 +344,14 @@ export class Parser{
             if(!this.registryHash.hasOwnProperty(namespace)) continue;
 
             // get previous version of the files
-            var namespacePath = namespace + '.json';
-            //var namespaceOldPath = namespace + '_old.json';
+            var namespacePath = namespace + '.json',
+                namespaceOldPath = namespace + '_old.json';
 
             var basePath = this.localesPath+"/"+locale+"/";
             if(this.verbose) gutil.log('basePath', basePath);
 
-            if(fs.existsSync(basePath+namespacePath)){
-                try{
-                    currentTranslations = JSON.parse(fs.readFileSync(basePath+namespacePath));
-                }catch(error){
-                    this.emit('json_error', error.name, error.message);
-                    currentTranslations = {};
-                }
-            }else{
-                currentTranslations = {};
-            }
-
-            //if(fs.existsSync(basePath+namespaceOldPath)){
-            //  try{
-            //    oldTranslations = JSON.parse(fs.readFileSync(basePath+namespaceOldPath));
-            //  }
-            //  catch(error){
-            //    this.emit('json_error', error.name, error.message);
-            //    currentTranslations = {};
-            //  }
-            //}
-            //else{
-            //  oldTranslations = {};
-            //}
-
-            oldTranslations = {};
+            currentTranslations = loadFromJSONFile(basePath + namespacePath);
+            oldTranslations = loadFromJSONFile(basePath + namespaceOldPath);
 
             // merges existing translations with the new ones
             mergedTranslations = mergeHash(currentTranslations, Object.assign({}, this.registryHash[namespace]));
@@ -389,27 +366,25 @@ export class Parser{
             mergedTranslations.new = this.getValuesFromHash(this.valuesHash, mergedTranslations.new,transform,this.nodesHash,this.valuesHash);
 
             // merges former old translations with the new ones
-            mergedTranslations.old = _.extend(oldTranslations, mergedTranslations.new);
+            mergedTranslations.old = _.extend(oldTranslations, mergedTranslations.old);
 
             // push files back to the stream
             var mergedTranslationsFile = new File({
-                path: locale+"/"+namespacePath,
-                //base: locale,
+                path: locale + "/" + namespacePath,
                 contents: new Buffer(JSON.stringify(mergedTranslations.new, null, 2))
             });
-            //var mergedOldTranslationsFile = new File({
-            //  path: locale+"/"+namespaceOldPath,
-            //  //base: locale,
-            //  contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
-            //});
+            var mergedOldTranslationsFile = new File({
+                path: locale + "/" + namespaceOldPath,
+                contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
+            });
 
-            /*if(this.verbose){
-              gutil.log('writing', locale+"/"+namespacePath);
-              gutil.log('writing', locale+"/"+namespaceOldPath);
-            }*/
+            if (this.verbose){
+                gutil.log('writing', locale + "/" + namespacePath);
+                gutil.log('writing', locale + "/" + namespaceOldPath);
+            }
 
             this.stream.push(mergedTranslationsFile);
-            //this.stream.push(mergedOldTranslationsFile);
+            this.stream.push(mergedOldTranslationsFile);
         }
 
     }

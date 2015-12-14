@@ -7,6 +7,13 @@ exports.hashFromString = hashFromString;
 exports.mergeHash = mergeHash;
 exports.replaceEmpty = replaceEmpty;
 exports.transformText = transformText;
+exports.loadFromJSONFile = loadFromJSONFile;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _gracefulFs = require("graceful-fs");
+
+var _gracefulFs2 = _interopRequireDefault(_gracefulFs);
 
 function hashFromString(path, value, separator, hash) {
   separator = separator || '.';
@@ -95,5 +102,18 @@ function transformText(str) {
     if (m[2]) str = str.replace(m[2], m[2].toUpperCase());
   }
   return str;
+}
+
+function loadFromJSONFile(path) {
+  if (_gracefulFs2['default'].existsSync(path)) {
+    try {
+      return JSON.parse(_gracefulFs2['default'].readFileSync(path));
+    } catch (error) {
+      this.emit('json_error', error.name, error.message);
+      return {};
+    }
+  } else {
+    return {};
+  }
 }
 //# sourceMappingURL=helpers.js.map

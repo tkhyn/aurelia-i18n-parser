@@ -1,3 +1,5 @@
+import fs from "graceful-fs";
+
 /**
  * Create a hash from a translation key.
  *
@@ -140,3 +142,22 @@ export function transformText(str){
   }
   return str;
 }
+
+/**
+ * Loads a JSON file and returns an object. The object is empty if the file
+ * does not exist
+ */
+export function loadFromJSONFile(path) {
+    if(fs.existsSync(path)){
+        try{
+            return JSON.parse(fs.readFileSync(path));
+        } catch(error) {
+            this.emit('json_error', error.name, error.message);
+            return {};
+        }
+    }else{
+        return {};
+    }
+}
+
+

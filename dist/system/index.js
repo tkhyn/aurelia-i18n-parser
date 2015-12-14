@@ -1,7 +1,7 @@
 System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jquery", "./helpers", "path", "vinyl", "./app-extractor", "core-js"], function (_export) {
     "use strict";
 
-    var through, gutil, _, fs, jsdom, $, hashFromString, mergeHash, replaceEmpty, transformText, path, File, AppExtractor, corejs, Promise, PluginError, PLUGIN_NAME, OBJ_REGEXP, KEY_VALUE_REGEXP, KEY_VALUE_REGEXP_T, Parser;
+    var through, gutil, _, fs, jsdom, $, hashFromString, mergeHash, replaceEmpty, transformText, loadFromJSONFile, path, File, AppExtractor, corejs, Promise, PluginError, PLUGIN_NAME, OBJ_REGEXP, KEY_VALUE_REGEXP, KEY_VALUE_REGEXP_T, Parser;
 
     var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
 
@@ -33,6 +33,7 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
             mergeHash = _helpers.mergeHash;
             replaceEmpty = _helpers.replaceEmpty;
             transformText = _helpers.transformText;
+            loadFromJSONFile = _helpers.loadFromJSONFile;
         }, function (_path) {
             path = _path["default"];
         }, function (_vinyl) {
@@ -46,9 +47,9 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
             Promise = corejs.Promise;
             PluginError = gutil.PluginError;
             PLUGIN_NAME = "aurelia-i18n-parser";
-            OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
-            KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-            KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/);
+            OBJ_REGEXP = /^\s*\{\s*([\s\S]*)\s*\}\s*$/;
+            KEY_VALUE_REGEXP = /\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g;
+            KEY_VALUE_REGEXP_T = /('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/;
 
             Parser = (function () {
                 function Parser(opts) {
@@ -288,7 +289,9 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
                             if (!key) key = value;
                             keys.push(key);
-                            _this3.values[key] = value;
+                            if (value) {
+                                _this3.values[key] = value;
+                            }
                             _this3.nodes[key] = node;
                         });
 
@@ -346,23 +349,14 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
                         for (var namespace in this.registryHash) {
                             if (!this.registryHash.hasOwnProperty(namespace)) continue;
 
-                            var namespacePath = namespace + '.json';
+                            var namespacePath = namespace + '.json',
+                                namespaceOldPath = namespace + '_old.json';
 
                             var basePath = this.localesPath + "/" + locale + "/";
                             if (this.verbose) gutil.log('basePath', basePath);
 
-                            if (fs.existsSync(basePath + namespacePath)) {
-                                try {
-                                    currentTranslations = JSON.parse(fs.readFileSync(basePath + namespacePath));
-                                } catch (error) {
-                                    this.emit('json_error', error.name, error.message);
-                                    currentTranslations = {};
-                                }
-                            } else {
-                                currentTranslations = {};
-                            }
-
-                            oldTranslations = {};
+                            currentTranslations = loadFromJSONFile(basePath + namespacePath);
+                            oldTranslations = loadFromJSONFile(basePath + namespaceOldPath);
 
                             mergedTranslations = mergeHash(currentTranslations, Object.assign({}, this.registryHash[namespace]));
 
@@ -374,15 +368,24 @@ System.register(["through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "jqu
 
                             mergedTranslations["new"] = this.getValuesFromHash(this.valuesHash, mergedTranslations["new"], transform, this.nodesHash, this.valuesHash);
 
-                            mergedTranslations.old = _.extend(oldTranslations, mergedTranslations["new"]);
+                            mergedTranslations.old = _.extend(oldTranslations, mergedTranslations.old);
 
                             var mergedTranslationsFile = new File({
                                 path: locale + "/" + namespacePath,
-
                                 contents: new Buffer(JSON.stringify(mergedTranslations["new"], null, 2))
                             });
+                            var mergedOldTranslationsFile = new File({
+                                path: locale + "/" + namespaceOldPath,
+                                contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
+                            });
+
+                            if (this.verbose) {
+                                gutil.log('writing', locale + "/" + namespacePath);
+                                gutil.log('writing', locale + "/" + namespaceOldPath);
+                            }
 
                             this.stream.push(mergedTranslationsFile);
+                            this.stream.push(mergedOldTranslationsFile);
                         }
                     }
                 }, {

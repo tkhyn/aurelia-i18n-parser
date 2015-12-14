@@ -60,9 +60,9 @@ var PluginError = _gulpUtil2["default"].PluginError;
 
 var PLUGIN_NAME = "aurelia-i18n-parser";
 
-var OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
-var KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-var KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/);
+var OBJ_REGEXP = /^\s*\{\s*([\s\S]*)\s*\}\s*$/;
+var KEY_VALUE_REGEXP = /\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g;
+var KEY_VALUE_REGEXP_T = /('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/;
 
 var Parser = (function () {
     function Parser(opts) {
@@ -302,7 +302,9 @@ var Parser = (function () {
 
                 if (!key) key = value;
                 keys.push(key);
-                _this3.values[key] = value;
+                if (value) {
+                    _this3.values[key] = value;
+                }
                 _this3.nodes[key] = node;
             });
 
@@ -360,23 +362,14 @@ var Parser = (function () {
             for (var namespace in this.registryHash) {
                 if (!this.registryHash.hasOwnProperty(namespace)) continue;
 
-                var namespacePath = namespace + '.json';
+                var namespacePath = namespace + '.json',
+                    namespaceOldPath = namespace + '_old.json';
 
                 var basePath = this.localesPath + "/" + locale + "/";
                 if (this.verbose) _gulpUtil2["default"].log('basePath', basePath);
 
-                if (_gracefulFs2["default"].existsSync(basePath + namespacePath)) {
-                    try {
-                        currentTranslations = JSON.parse(_gracefulFs2["default"].readFileSync(basePath + namespacePath));
-                    } catch (error) {
-                        this.emit('json_error', error.name, error.message);
-                        currentTranslations = {};
-                    }
-                } else {
-                    currentTranslations = {};
-                }
-
-                oldTranslations = {};
+                currentTranslations = (0, _helpers.loadFromJSONFile)(basePath + namespacePath);
+                oldTranslations = (0, _helpers.loadFromJSONFile)(basePath + namespaceOldPath);
 
                 mergedTranslations = (0, _helpers.mergeHash)(currentTranslations, Object.assign({}, this.registryHash[namespace]));
 
@@ -388,15 +381,24 @@ var Parser = (function () {
 
                 mergedTranslations["new"] = this.getValuesFromHash(this.valuesHash, mergedTranslations["new"], transform, this.nodesHash, this.valuesHash);
 
-                mergedTranslations.old = _lodash2["default"].extend(oldTranslations, mergedTranslations["new"]);
+                mergedTranslations.old = _lodash2["default"].extend(oldTranslations, mergedTranslations.old);
 
                 var mergedTranslationsFile = new _vinyl2["default"]({
                     path: locale + "/" + namespacePath,
-
                     contents: new Buffer(JSON.stringify(mergedTranslations["new"], null, 2))
                 });
+                var mergedOldTranslationsFile = new _vinyl2["default"]({
+                    path: locale + "/" + namespaceOldPath,
+                    contents: new Buffer(JSON.stringify(mergedTranslations.old, null, 2))
+                });
+
+                if (this.verbose) {
+                    _gulpUtil2["default"].log('writing', locale + "/" + namespacePath);
+                    _gulpUtil2["default"].log('writing', locale + "/" + namespaceOldPath);
+                }
 
                 this.stream.push(mergedTranslationsFile);
+                this.stream.push(mergedOldTranslationsFile);
             }
         }
     }, {
