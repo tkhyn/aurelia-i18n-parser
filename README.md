@@ -29,9 +29,8 @@ Also tries to extract Aurelia specific values like the routes with a navigation.
 ## Options and default values
 
 - **verbose** `false`: enable verbose output
-- **appPath** `null`: path to the aurelia application directory relative to the cwd
 - **localesPath** `"src/locales"`: the path where the locale files must be stored
-- **routesModuleId** `"routes"`: the module to extract routes from. This module should export the routes array
+- **routesArrayPath** `null`: the path to the Array where the routes are stored (e.g. `"app/app.routes"` retrieves the `routes` table in module `app.js` located in folder `app`), relative to the package root. If no path is provided, the routes will not be parsed / translated.
 - **locales** `['en-US']`: translation files will be created for these locales
 - **defaultLocale** `"en"`: the extracted default values will fill this locale's translation file
 - **functions** `["t"]`: functions that are used in the JS code to translate values

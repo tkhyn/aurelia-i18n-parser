@@ -32,9 +32,8 @@ export class Parser{
     imageAttribute = "data-src";
     keySeparator = ".";
     functionsParamsExclude = ['key: string, options: any'];
-    appPath = null;
     localesPath = "src/locales";
-    routesModuleId = "routes";
+    routesArrayPath = null;
     locales = ['en-US'];
     defaultLocale = "en";
     shortcutFunction = 'sprintf';
@@ -47,7 +46,9 @@ export class Parser{
     constructor(opts){
         if(opts) Object.assign(this,opts);
 
-        if(this.appPath) this.extractor = new AppExtractor(this.appPath);
+        if (this.routesArrayPath) {
+            this.extractor = new AppExtractor(this.routesArrayPath);
+        }
     }
 
     parse(){
@@ -433,7 +434,7 @@ export class Parser{
      * @returns {Promise}
      */
     extractFromApp(){
-        return this.extractor.getNavFromRoutes(this.routesModuleId)
+        return this.extractor.getNavFromRoutes()
          .then(navRoutes=>{
              if(!navRoutes) return null;
 

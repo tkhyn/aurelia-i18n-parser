@@ -55,9 +55,8 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
             this.imageAttribute = "data-src";
             this.keySeparator = ".";
             this.functionsParamsExclude = ['key: string, options: any'];
-            this.appPath = null;
             this.localesPath = "src/locales";
-            this.routesModuleId = "routes";
+            this.routesArrayPath = null;
             this.locales = ['en-US'];
             this.defaultLocale = "en";
             this.shortcutFunction = 'sprintf';
@@ -68,7 +67,9 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
 
             if (opts) Object.assign(this, opts);
 
-            if (this.appPath) this.extractor = new _appExtractor.AppExtractor(this.appPath);
+            if (this.routesArrayPath) {
+                this.extractor = new _appExtractor.AppExtractor(this.routesArrayPath);
+            }
         }
 
         _createClass(Parser, [{
@@ -396,7 +397,7 @@ define(["exports", "through2", "gulp-util", "lodash", "graceful-fs", "jsdom", "j
             value: function extractFromApp() {
                 var _this4 = this;
 
-                return this.extractor.getNavFromRoutes(this.routesModuleId).then(function (navRoutes) {
+                return this.extractor.getNavFromRoutes().then(function (navRoutes) {
                     if (!navRoutes) return null;
 
                     for (var i = 0, l = navRoutes.length; i < l; i++) {
