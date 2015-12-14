@@ -17,9 +17,9 @@ var PluginError = gutil.PluginError;
 
 const PLUGIN_NAME = "aurelia-i18n-parser";
 
-const OBJ_REGEXP = new RegExp(/^\s*\{\s*([\s\S]*)\s*\}\s*$/);
-const KEY_VALUE_REGEXP = new RegExp(/\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g);
-const KEY_VALUE_REGEXP_T = new RegExp(/('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/)
+const OBJ_REGEXP = /^\s*\{\s*([\s\S]*)\s*\}\s*$/;
+const KEY_VALUE_REGEXP = /\s*['"]?([\w]*)['"]?\s*:\s*(\{[\s\S]*\}|\[[\s\S]*\]|[^,]*)\s*,?\s*(?=$|["'\w]+)/g;
+const KEY_VALUE_REGEXP_T = /('.*'|".*")\s*\|\s*t\s*:?\s*(.*?)\s*(?:\||$)/;
 
 
 export class Parser{
@@ -236,7 +236,7 @@ export class Parser{
 
         nodes.each(i=>{
             var node = nodes.eq(i);
-            var value,key,m;
+            var value, key, m;
 
             key = node.attr(this.translationAttribute);
 
@@ -291,9 +291,11 @@ export class Parser{
             // remove the optional attribute
             key = key.replace(/\[[a-z]*]/g, '');
 
-            if(!key) key = value;
+            if (!key) key = value;
             keys.push(key);
-            this.values[key] = value;
+            if (value) {
+                this.values[key] = value;
+            }
             this.nodes[key] = node;
         });
 
